@@ -317,7 +317,7 @@ export function Landing() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                <Link href="/home" className="block w-full">
+                <Link href="/create-account" className="block w-full">
                   <Button
                     size="lg"
                     className="w-full rounded-full h-14 text-base font-semibold text-white shadow-lg shadow-primary/30"

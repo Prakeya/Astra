@@ -9,7 +9,7 @@ export function BottomNav() {
   const [showSOSToast, setShowSOSToast] = useState(false);
   const [sosProgress, setSosProgress] = useState(0);
   
-  if (location === "/" || location === "/sos" || location === "/guardian-onboarding") {
+  if (location === "/" || location === "/sos" || location === "/guardian-onboarding" || location === "/create-account") {
     return null;
   }
 

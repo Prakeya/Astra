@@ -19,6 +19,7 @@ import { DistractionCall } from "@/pages/DistractionCall";
 import { CheckInTimer } from "@/pages/CheckInTimer";
 import { IncidentMap } from "@/pages/IncidentMap";
 import { VoiceActivation } from "@/pages/VoiceActivation";
+import { CreateAccount } from "@/pages/CreateAccount";
 import { BottomNav } from "@/components/BottomNav";
 import { useVoiceActivation, VoiceTriggeredOverlay, VoiceStatusPill } from "@/components/VoiceListener";
 
@@ -75,6 +76,7 @@ function Router() {
           <Route path="/checkin" component={CheckInTimer} />
           <Route path="/incident-map" component={IncidentMap} />
           <Route path="/voice" component={VoiceActivation} />
+          <Route path="/create-account" component={CreateAccount} />
           <Route>
             <div className="p-8 text-center text-muted-foreground mt-20">Page not found</div>
           </Route>

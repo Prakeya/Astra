@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
-import { ArrowLeft, Phone, PhoneOff, Volume2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { ArrowLeft, Phone, PhoneOff, Volume2, VolumeX } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 
 const CONTACTS = [
   { name: "Mom", number: "+91 98765 00001", avatar: "👩" },
@@ -10,12 +10,32 @@ const CONTACTS = [
   { name: "Office Security", number: "+91 98765 00004", avatar: "👮" },
 ];
 
-const CALL_SCRIPTS = [
-  "Hey! Are you coming to pick me up? I'm at the junction near the mall...",
-  "Yes Mom, I'm on my way. Can you stay on the line?",
-  "Okay, I can see you. Just wait near the gate, I'll be there in 5 minutes.",
-  "Alright, I'm walking toward the main road now.",
-];
+const SCRIPTS: Record<string, string[]> = {
+  "Mom": [
+    "Hey beta, where are you? I was waiting...",
+    "Okay, okay — don't worry. I'm right here on the phone.",
+    "Yes I can stay on the call. Just keep walking, I'm with you.",
+    "You're almost there. Call me when you reach, okay?",
+  ],
+  "Sister": [
+    "Hey! Are you coming? We've been waiting.",
+    "Okay, stay on the line. I'll keep talking.",
+    "Tell me about your day. I'm here, don't worry.",
+    "Almost! I can see you on Google Maps, keep going!",
+  ],
+  "Friend (Ananya)": [
+    "Hey! Are you coming to pick me up? I'm at the junction...",
+    "Yes, I can see you. Just wait near the gate, I'll be there in 5.",
+    "Okay, I'm walking toward the main road now.",
+    "Alright — I'm tracking your location. Keep talking!",
+  ],
+  "Office Security": [
+    "Hello, this is security. Your cab is at Gate 2.",
+    "Okay, I'll stay on the line until you reach.",
+    "Roger that — I can see the area on CCTV. All clear.",
+    "Stay on the main road. I've informed patrol.",
+  ],
+};
 
 export function DistractionCall() {
   const [, setLocation] = useLocation();
@@ -23,19 +43,69 @@ export function DistractionCall() {
   const [callDuration, setCallDuration] = useState(0);
   const [scriptIdx, setScriptIdx] = useState(0);
   const [selectedContact, setSelectedContact] = useState(CONTACTS[0]);
+  const [speaking, setSpeaking] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const synthRef = useRef<SpeechSynthesis | null>(null);
+
+  const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+
+  const speak = (text: string) => {
+    if (muted || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(text);
+    const voices = window.speechSynthesis.getVoices();
+    const femaleVoice = voices.find(v => v.name.toLowerCase().includes("female") || v.name.includes("Samantha") || v.name.includes("Karen") || v.name.includes("Veena") || v.lang === "en-IN");
+    if (femaleVoice) utt.voice = femaleVoice;
+    utt.rate = 0.92;
+    utt.pitch = 1.1;
+    utt.volume = 1;
+    utt.onstart = () => setSpeaking(true);
+    utt.onend = () => setSpeaking(false);
+    window.speechSynthesis.speak(utt);
+  };
+
+  useEffect(() => {
+    synthRef.current = window.speechSynthesis;
+    return () => { synthRef.current?.cancel(); };
+  }, []);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (callActive) {
+      const scripts = SCRIPTS[selectedContact.name] || SCRIPTS["Friend (Ananya)"];
+      // Speak first line immediately
+      setTimeout(() => speak(scripts[0]), 800);
+
       interval = setInterval(() => {
         setCallDuration(d => d + 1);
-        if (Math.random() > 0.7) setScriptIdx(i => (i + 1) % CALL_SCRIPTS.length);
-      }, 4000);
-    }
-    return () => clearInterval(interval);
-  }, [callActive]);
+      }, 1000);
 
-  const fmt = (s: number) => `${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
+      const scriptInterval = setInterval(() => {
+        setScriptIdx(i => {
+          const next = (i + 1) % scripts.length;
+          speak(scripts[next]);
+          return next;
+        });
+      }, 8000);
+
+      return () => { clearInterval(interval); clearInterval(scriptInterval); };
+    }
+  }, [callActive, muted, selectedContact]);
+
+  const startCall = () => {
+    setCallActive(true);
+    setCallDuration(0);
+    setScriptIdx(0);
+  };
+
+  const endCall = () => {
+    setCallActive(false);
+    setCallDuration(0);
+    window.speechSynthesis?.cancel();
+    setSpeaking(false);
+  };
+
+  const scripts = SCRIPTS[selectedContact.name] || SCRIPTS["Friend (Ananya)"];
 
   return (
     <div className="min-h-[100dvh] flex flex-col" style={{ background: "#0a0f1e" }}>
@@ -45,101 +115,99 @@ export function DistractionCall() {
         </button>
         <div>
           <h1 className="text-lg font-bold text-white">Distraction Call</h1>
-          <p className="text-xs text-slate-400">Simulate a call to look occupied</p>
+          <p className="text-xs text-slate-400">Simulate a call — with real voice</p>
         </div>
       </div>
 
       <AnimatePresence mode="wait">
         {!callActive ? (
-          <motion.div
-            key="setup"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex-1 p-4 pb-24"
-          >
-            <div className="rounded-2xl p-4 border border-primary/20 mb-6" style={{ background: "#111122" }}>
+          <motion.div key="setup" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+            className="flex-1 p-4 pb-24">
+            <div className="rounded-2xl p-4 border border-primary/20 mb-6" style={{ background:"#111122" }}>
               <Volume2 size={16} className="text-primary mb-2"/>
               <p className="text-sm text-slate-300 leading-relaxed">
-                This feature simulates a real incoming call with an automated voice. Use it if you feel followed or unsafe — it makes you look like you're actively talking to someone.
+                This starts a <strong className="text-white">real voice call simulation</strong> — your phone will speak the other person's lines out loud using text-to-speech. Use it if you feel followed or unsafe.
               </p>
             </div>
 
             <h3 className="text-sm font-semibold text-slate-300 mb-3">Choose who's "calling" you</h3>
             <div className="flex flex-col gap-2 mb-6">
               {CONTACTS.map(c => (
-                <button
-                  key={c.name}
-                  onClick={() => setSelectedContact(c)}
+                <button key={c.name} onClick={() => setSelectedContact(c)}
                   data-testid={`contact-${c.name.toLowerCase().replace(/\s/g,"-")}`}
-                  className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${selectedContact.name === c.name ? "border-primary bg-primary/10" : "border-white/10 bg-[#111827]"}`}
-                >
+                  className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${selectedContact.name === c.name ? "border-primary bg-primary/10" : "border-white/10 bg-[#111827]"}`}>
                   <span className="text-2xl">{c.avatar}</span>
                   <div className="text-left">
                     <div className="text-sm font-semibold text-white">{c.name}</div>
                     <div className="text-xs text-slate-400">{c.number}</div>
                   </div>
+                  {selectedContact.name === c.name && <div className="ml-auto w-2 h-2 rounded-full bg-primary"/>}
                 </button>
               ))}
             </div>
 
-            <button
-              onClick={() => { setCallActive(true); setCallDuration(0); }}
-              data-testid="btn-start-call"
-              className="w-full h-14 rounded-full font-semibold text-white flex items-center justify-center gap-2 shadow-lg shadow-green-900/30"
-              style={{ background: "linear-gradient(135deg, #166534, #15803d)" }}
-            >
-              <Phone size={20}/> Start Fake Call
+            <button onClick={startCall} data-testid="btn-start-call"
+              className="w-full h-14 rounded-full font-semibold text-white flex items-center justify-center gap-2 shadow-lg"
+              style={{ background:"linear-gradient(135deg, #166534, #15803d)" }}>
+              <Phone size={20}/> Start Fake Call (with voice)
             </button>
           </motion.div>
         ) : (
-          <motion.div
-            key="call"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex-1 flex flex-col items-center justify-between p-8 pb-24"
-            style={{ background: "linear-gradient(to bottom, #0a1a0a, #0a0f1e)" }}
-          >
-            <div className="flex flex-col items-center mt-12">
-              <motion.div
-                animate={{ scale: [1, 1.08, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="w-24 h-24 rounded-full flex items-center justify-center text-5xl mb-4 border-2 border-green-500/30"
-                style={{ background: "#0f2a0f" }}
-              >
+          <motion.div key="call" initial={{ opacity:0, scale:0.96 }} animate={{ opacity:1, scale:1 }} exit={{ opacity:0 }}
+            className="flex-1 flex flex-col items-center justify-between pb-12"
+            style={{ background:"linear-gradient(to bottom, #050f05, #0a0f1e)" }}>
+
+            {/* Caller info */}
+            <div className="flex flex-col items-center pt-14">
+              <motion.div animate={{ scale: speaking ? [1,1.1,1] : 1 }}
+                transition={{ duration:0.4, repeat: speaking ? Infinity : 0 }}
+                className="w-28 h-28 rounded-full flex items-center justify-center text-6xl mb-4 border-2"
+                style={{ background:"#0f2a0f", borderColor: speaking ? "rgba(34,197,94,0.6)" : "rgba(34,197,94,0.2)" }}>
                 {selectedContact.avatar}
               </motion.div>
               <h2 className="text-2xl font-bold text-white">{selectedContact.name}</h2>
-              <p className="text-green-400 text-sm mt-1 font-medium">{fmt(callDuration)}</p>
-              <p className="text-slate-400 text-xs mt-0.5">Simulated call in progress</p>
+              <p className="text-green-400 text-base font-semibold mt-1">{fmt(callDuration)}</p>
+              {speaking && (
+                <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }}
+                  className="flex items-center gap-1.5 mt-2">
+                  {[0,1,2,3].map(i => (
+                    <motion.div key={i} className="w-1 rounded-full bg-green-400"
+                      animate={{ height:[8,20,8] }} transition={{ duration:0.5, delay:i*0.1, repeat:Infinity }}/>
+                  ))}
+                  <span className="text-xs text-green-400 ml-1">Speaking…</span>
+                </motion.div>
+              )}
             </div>
 
-            {/* Animated speech bubble */}
+            {/* Speech bubble */}
             <AnimatePresence mode="wait">
-              <motion.div
-                key={scriptIdx}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="w-full rounded-2xl p-4 border border-white/10 mx-auto"
-                style={{ background: "#111827" }}
-              >
-                <div className="flex gap-2 items-start">
-                  <div className="w-2 h-2 rounded-full bg-green-400 mt-2 animate-pulse shrink-0"/>
-                  <p className="text-sm text-slate-300 italic">{CALL_SCRIPTS[scriptIdx]}</p>
+              <motion.div key={scriptIdx} initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }}
+                exit={{ opacity:0, y:-10 }} className="w-full px-6 my-4">
+                <div className="rounded-2xl p-4 border border-white/10" style={{ background:"#111827" }}>
+                  <div className="flex gap-2 items-start">
+                    <span className="text-lg shrink-0">{selectedContact.avatar}</span>
+                    <p className="text-sm text-slate-200 italic leading-relaxed">"{scripts[scriptIdx]}"</p>
+                  </div>
                 </div>
               </motion.div>
             </AnimatePresence>
 
-            <button
-              onClick={() => { setCallActive(false); setCallDuration(0); }}
-              data-testid="btn-end-call"
-              className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg"
-              style={{ background: "#c0392b" }}
-            >
-              <PhoneOff size={28} className="text-white"/>
-            </button>
+            {/* Controls */}
+            <div className="flex flex-col items-center gap-6 w-full px-6">
+              {/* Mute toggle */}
+              <button onClick={() => { setMuted(m => !m); if (!muted) window.speechSynthesis?.cancel(); }}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-full border text-sm font-medium transition-all ${muted ? "border-red-500/40 bg-red-500/10 text-red-400" : "border-white/15 text-slate-300"}`}>
+                {muted ? <VolumeX size={16}/> : <Volume2 size={16}/>}
+                {muted ? "Voice muted" : "Voice on"}
+              </button>
+
+              {/* End call */}
+              <button onClick={endCall} data-testid="btn-end-call"
+                className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg"
+                style={{ background:"#c0392b" }}>
+                <PhoneOff size={28} className="text-white"/>
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
