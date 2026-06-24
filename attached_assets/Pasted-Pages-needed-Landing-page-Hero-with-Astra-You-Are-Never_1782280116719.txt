@@ -1,0 +1,27 @@
+Pages needed:
+
+    Landing page — Hero with "Astra — You Are Never Alone", illustration of women walking with guardian dots, "Start Walking" and "Join as Guardian" buttons, "How it works" scroll sections.
+    Dashboard — Safety score card, live map with Google Maps (user dot + guardian dots + heatmap), "Start Walk", "Report Issue", "Guardians Nearby" buttons, expandable cards for: Join Verification, Safety Replay, Safety Timeline, Community Impact Dashboard, Leaderboard, Prediction Agent Output, Trust Agent Output, Municipality Escalation, Severity Summary.
+    Walk Mode — Full-screen map, live route, guardian dots, ETA, "Check In", "I'm Safe", "SOS" buttons, alert feed.
+    SOS Screen — "Emergency Active", guardian response list with names/distances/status, map with converging dots, "Call Closest", "Call Police", "Safe Now" buttons, alarm toggle.
+    Safe Now — "You Are Safe", thank you list with real guardian names and what they did, "This week X guardians kept Y women safe", share/rate/done buttons.
+    Report Issue — Camera/gallery upload, voice note, text, category picker (dark road, harassment, broken light, isolated, suspicious, other), location auto-detect, anonymous toggle, submit.
+    Guardians Nearby — List of available guardians with photo, name, rating, distance, "Request Help" button, "Become a Guardian" toggle.
+    Profile/Settings — Editable: name, phone, email, avatar, trusted contacts (add/edit/remove with name/phone/relation), safe zones (add/edit/remove with name/address/type), preferences (guardian radius, voice trigger, background mode, silent SOS, language, notification sound), emergency settings (auto-escalation delay, check-in interval, SOS countdown, auto-call police, share with family, deterrent alarm).
+
+All data must be editable and save to Firestore.
+Backend: Firebase Auth, Firestore with real-time sync, Firebase Cloud Messaging for push notifications, Google Maps JavaScript API, Google Routes API, Google Places API, Gemini API for reasoning, Google Cloud Speech-to-Text for voice triggers, Google Cloud Vision API for image analysis, Google BigQuery for analytics.
+Agents (mock data for demo, real logic for 3 core agents):
+
+    Guardian Agent (real) — monitors walks, detects deviation/inactivity/ETA delay, decides warn/prompt/escalate
+    Route Agent (real) — calculates safest route, dynamic reroute
+    Emergency Agent (real) — SOS trigger, escalation chain, guardian alerts
+    Prediction Agent (mock) — shows risk scores
+    Companion Agent (mock) — check-in messages
+    Alert Agent (mock) — notifications
+    Voice Agent (mock) — "Astra help" trigger
+    Vision Agent (mock) — image tags
+    Help Point Agent (mock) — nearby points list
+    Municipality Agent (mock) — report generation
+
+Data model: users, walks, incidents, guardians, sos_events, municipality_reports collections in Firestore. All fields editable.

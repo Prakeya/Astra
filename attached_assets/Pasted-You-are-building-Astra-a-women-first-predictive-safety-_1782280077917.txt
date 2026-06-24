@@ -1,0 +1,463 @@
+You are building Astra, a women-first predictive safety companion for the Vibe2Ship hackathon (Coding Ninjas x Google for Developers). The app must be built and deployed using Google AI Studio as the core tool. Submission deadline: June 29, 2026, 2:00 PM.
+The Product
+Astra is a women-first personal and community safety companion that predicts danger, explains risk clearly, and acts autonomously to keep users protected. It combines:
+
+    Personal safety (SOS, silent SOS, safe routing, check-ins)
+    Community intelligence (guardian network, anonymous reporting, help points)
+    Agentic AI (10 autonomous agents coordinating protection)
+
+Tagline: "You are never alone."
+Problem Statement Alignment
+This aligns with Problem Statement 2: Community Hero — Hyperlocal Problem Solver by:
+
+    Citizens (women) identifying unsafe areas through reports
+    Community validating reports through trust scores and clustering
+    Tracking incidents and guardian responses in real-time
+    Resolving through guardian network + municipality escalation
+    Transparency through public accountability scorecards
+
+UI Plan & Page Structure
+1. Landing Page (First Impression)
+plain
+
+┌─────────────────────────────────────────────┐
+│  [Astra logo]  [How it works]  [Sign In]    │
+│                                             │
+│  [HERO ILLUSTRATION]                        │
+│  Women walking, golden guardian dots,       │
+│  warm streetlights, connected threads         │
+│                                             │
+│  A S T R A                                  │
+│  You Are Never Alone                        │
+│                                             │
+│  [Start Walking]  [Join as Guardian]         │
+│                                             │
+│  ↓ How it works ↓                          │
+└─────────────────────────────────────────────┘
+
+Scroll sections:
+
+    How it works (4 steps with illustrations)
+    Community impact stats
+    Testimonials
+    CTA: Join Astra
+
+Color palette:
+
+    Cream background: #FDF6E3
+    Terracotta accents: #E07A5F
+    Sage green (safe): #81B29A
+    Soft gold (guardians): #F2CC8F
+    Deep indigo (text): #3D405B
+
+2. Dashboard (Main App Screen)
+plain
+
+┌─────────────────────────────────────────────┐
+│  [Astra]  [Home] [Walk] [Map] [SOS] [Profile]│
+│                                             │
+│  ┌─────────────────────────────────────┐   │
+│  │  SAFETY SCORE: 85/100 🟢           │   │
+│  │  "Your route looks safe today"      │   │
+│  └─────────────────────────────────────┘   │
+│                                             │
+│  ┌─────────────────────────────────────┐   │
+│  │  [MAP: Live location + guardians     │   │
+│  │   + heatmap + safe route]            │   │
+│  └─────────────────────────────────────┘   │
+│                                             │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐      │
+│  │ START   │ │ REPORT  │ │ GUARDIANS│      │
+│  │ WALK    │ │ ISSUE   │ │ NEARBY  │      │
+│  └─────────┘ └─────────┘ └─────────┘      │
+│                                             │
+│  [EXPANDABLE CARDS]                         │
+│  ├─ Join Verification                      │
+│  ├─ Safety Replay                          │
+│  ├─ Safety Timeline                        │
+│  ├─ Community Impact                      │
+│  ├─ Leaderboard                            │
+│  ├─ Prediction Agent Output                │
+│  ├─ Trust Agent Output                     │
+│  ├─ Municipality Escalation                │
+│  └─ Severity Summary                       │
+│                                             │
+└─────────────────────────────────────────────┘
+
+3. Walk Mode Screen
+plain
+
+┌─────────────────────────────────────────────┐
+│  [← Back]  WALK MODE                        │
+│                                             │
+│  ┌─────────────────────────────────────┐   │
+│  │  [MAP: Your dot moving, route line,  │   │
+│  │   guardian dots nearby, ETA]        │   │
+│  └─────────────────────────────────────┘   │
+│                                             │
+│  Status: 🟢 Walking safely                  │
+│  ETA: 12 min                                │
+│  Guardians watching: 3                      │
+│                                             │
+│  [Check In]  [I'm Safe]  [🚨 SOS]         │
+│                                             │
+│  Recent alerts:                             │
+│  ⚠️ "Dark alley ahead in 200m"            │
+│  ✅ "Rerouted to MG Road"                   │
+│                                             │
+└─────────────────────────────────────────────┘
+
+4. SOS Screen (Emergency)
+plain
+
+┌─────────────────────────────────────────────┐
+│  🚨 EMERGENCY ACTIVE                        │
+│                                             │
+│  Alerting guardians...                      │
+│  ━━━━━━━━━━━━━━━━  3/5 responded          │
+│                                             │
+│  Ananya — 80m, arriving ⏱️ 2 min           │
+│  Rahul — 120m, called police 📞            │
+│  Meera — 150m, on line ☎️                   │
+│                                             │
+│  [MAP: Your dot + 3 guardian dots moving]   │
+│                                             │
+│  [Call Closest]  [Call Police]  [Safe Now]  │
+│                                             │
+│  Phone: 🔊 Alarm active (deterrent)          │
+│  Flash: 💡 SOS pattern                       │
+│                                             │
+└─────────────────────────────────────────────┘
+
+5. Safe Now Screen (Emotional Close)
+plain
+
+┌─────────────────────────────────────────────┐
+│  ✨ YOU ARE SAFE                            │
+│                                             │
+│  Thank you,                                 │
+│  🙏 Ananya — arrived in 2 min               │
+│  🙏 Rahul — called police                   │
+│  🙏 Meera — stayed on line                  │
+│                                             │
+│  [Photo/avatar of each guardian]            │
+│  [Message: "Glad you're safe! 💙"]          │
+│                                             │
+│  ─────────────────────────────────────      │
+│  This week:                                 │
+│  47 guardians kept 203 women safe           │
+│  You're one of them                         │
+│                                             │
+│  [Share Story]  [Rate Guardians]  [Done]   │
+│                                             │
+└─────────────────────────────────────────────┘
+
+6. Report Issue Screen
+plain
+
+┌─────────────────────────────────────────────┐
+│  [← Back]  REPORT UNSAFE AREA               │
+│                                             │
+│  [📷 Camera / 📁 Gallery]                   │
+│  [🎤 Voice note]                            │
+│  [📝 Text description]                      │
+│                                             │
+│  Category:                                  │
+│  ○ Dark road  ○ Harassment  ○ Broken light │
+│  ○ Isolated  ○ Suspicious  ○ Other         │
+│                                             │
+│  Location: [Auto-detected] 📍               │
+│  Time: [Now]                                │
+│  Anonymous: [✓]                            │
+│                                             │
+│  [Submit Report]                            │
+│                                             │
+│  Trust score impact: +5 verified points     │
+│                                             │
+└─────────────────────────────────────────────┘
+
+7. Guardians Nearby Screen
+plain
+
+┌─────────────────────────────────────────────┐
+│  [← Back]  GUARDIANS NEARBY                 │
+│                                             │
+│  5 guardians available within 500m          │
+│                                             │
+│  ┌─────────────────────────────────────┐   │
+│  │ 👤 Ananya F.  ⭐ 4.9  🛡️ 47 helps │   │
+│  │    120m away · Available · Verified │   │
+│  │    [Request Help] [View Profile]   │   │
+│  └─────────────────────────────────────┘   │
+│                                             │
+│  ┌─────────────────────────────────────┐   │
+│  │ 👤 Rahul K.   ⭐ 4.7  🛡️ 23 helps │   │
+│  │    180m away · Available · Verified │   │
+│  └─────────────────────────────────────┘   │
+│                                             │
+│  [Become a Guardian]                        │
+│  [Set Availability Hours]                   │
+│                                             │
+└─────────────────────────────────────────────┘
+
+8. Profile / Settings Screen
+plain
+
+┌─────────────────────────────────────────────┐
+│  [← Back]  PROFILE                          │
+│                                             │
+│  👤 Priya Sharma                            │
+│  ⭐ Guardian Score: 4.8                     │
+│  🛡️ 12 women helped                        │
+│  🏆 Badges: Shield Bearer, Night Guardian   │
+│                                             │
+│  ─────────────────────────────────────      │
+│  TRUSTED CONTACTS (editable)              │
+│  ├─ Mom: +91 98765 43210 [Edit] [Remove]   │
+│  ├─ Sister: +91 98765 43211 [Edit] [Remove]│
+│  └─ [+ Add Contact]                         │
+│                                             │
+│  ─────────────────────────────────────      │
+│  SAFE ZONES (editable)                      │
+│  ├─ Home: [Address] [Edit] [Remove]         │
+│  ├─ College: [Address] [Edit] [Remove]      │
+│  └─ [+ Add Zone]                            │
+│                                             │
+│  ─────────────────────────────────────      │
+│  ALERT PREFERENCES (editable)               │
+│  ├─ Guardian radius: [200m ▼]              │
+│  ├─ Voice trigger: ["Astra help" ▼]       │
+│  ├─ Background mode: [✓ On]                │
+│  └─ Silent SOS: [✓ On]                     │
+│                                             │
+│  ─────────────────────────────────────      │
+│  EMERGENCY SETTINGS (editable)              │
+│  ├─ Auto-call police: [✓ On]               │
+│  ├─ Share with family: [✓ On]               │
+│  └─ Deterrent alarm: [✓ On]                │
+│                                             │
+└─────────────────────────────────────────────┘
+
+Data Model (All Editable)
+All data should be stored in Firestore with real-time sync. Every field marked (editable) must be editable in the UI.
+JavaScript
+
+// Collection: users
+{
+  uid: "user_123",
+  name: "Priya Sharma",
+  phone: "+91 98765 43210",
+  email: "priya@example.com",
+  avatar: "https://...",
+  isVerified: true,
+  trustScore: 4.8,
+  guardianScore: 4.8,
+  badges: ["Shield Bearer", "Night Guardian"],
+  womenHelped: 12,
+  
+  // EDITABLE
+  trustedContacts: [
+    { id: "tc_1", name: "Mom", phone: "+91 98765 43210", relation: "family" },
+    { id: "tc_2", name: "Sister", phone: "+91 98765 43211", relation: "family" }
+  ],
+  
+  // EDITABLE
+  safeZones: [
+    { id: "sz_1", name: "Home", address: "123 MG Road", lat: 12.97, lng: 77.59, type: "home" },
+    { id: "sz_2", name: "College", address: "VTU Campus", lat: 12.98, lng: 77.60, type: "work" }
+  ],
+  
+  // EDITABLE
+  preferences: {
+    guardianRadius: 500, // meters
+    voiceTrigger: "Astra help",
+    backgroundMode: true,
+    silentSOS: true,
+    autoCallPolice: true,
+    shareWithFamily: true,
+    deterrentAlarm: true,
+    notificationSound: "gentle",
+    language: "en"
+  },
+  
+  // EDITABLE
+  emergencySettings: {
+    autoEscalationDelay: 60, // seconds
+    checkInInterval: 5, // minutes
+    sosCountdown: 3, // seconds before sending
+  },
+  
+  isGuardian: true,
+  guardianAvailability: {
+    active: true,
+    hours: { start: "18:00", end: "23:00" },
+    days: ["mon", "tue", "wed", "thu", "fri", "sat"]
+  },
+  location: { lat: 12.97, lng: 77.59 },
+  fcmToken: "...",
+  createdAt: timestamp,
+  updatedAt: timestamp
+}
+
+// Collection: walks
+{
+  id: "walk_456",
+  userId: "user_123",
+  status: "active", // active | completed | cancelled | emergency
+  startLocation: { lat: 12.97, lng: 77.59, address: "..." },
+  endLocation: { lat: 12.98, lng: 77.60, address: "..." },
+  route: [{ lat, lng, timestamp }, ...],
+  eta: 15, // minutes
+  guardiansWatching: ["user_789", "user_101"],
+  alerts: [
+    { type: "prediction", message: "Dark alley ahead", time: timestamp, severity: "medium" },
+    { type: "reroute", message: "Rerouted to MG Road", time: timestamp }
+  ],
+  sosTriggered: false,
+  sosDetails: null,
+  safeArrival: null,
+  createdAt: timestamp,
+  completedAt: null
+}
+
+// Collection: incidents
+{
+  id: "inc_789",
+  reporterId: "user_123",
+  isAnonymous: true,
+  type: "dark_road", // dark_road | harassment | broken_light | isolated | suspicious | other
+  description: "Streetlight broken, very dark",
+  location: { lat: 12.97, lng: 77.59, address: "..." },
+  mediaUrls: ["https://..."],
+  voiceUrl: null,
+  severity: "medium",
+  status: "verified", // reported | under_review | verified | resolved | false
+  verifiedBy: ["user_456", "user_789"],
+  trustScore: 4.5,
+  aiAnalysis: {
+    visionTags: ["dark", "broken_infrastructure", "deserted"],
+    confidence: 0.89,
+    similarIncidents: ["inc_111", "inc_222"]
+  },
+  municipalityReport: {
+    generated: true,
+    sentAt: timestamp,
+    department: "BESCOM",
+    status: "pending" // pending | in_progress | resolved
+  },
+  createdAt: timestamp
+}
+
+// Collection: guardians
+{
+  userId: "user_789",
+  isActive: true,
+  availability: {
+    status: "available", // available | busy | offline
+    until: timestamp
+  },
+  location: { lat: 12.975, lng: 77.595 },
+  responseTime: 2.3, // minutes average
+  totalResponses: 47,
+  rating: 4.9,
+  badges: ["Rapid Responder", "Night Guardian"],
+  createdAt: timestamp
+}
+
+// Collection: sos_events
+{
+  id: "sos_999",
+  walkId: "walk_456",
+  userId: "user_123",
+  triggeredAt: timestamp,
+  triggerMethod: "power_button", // power_button | voice | shake | app_button | auto
+  location: { lat: 12.97, lng: 77.59 },
+  status: "resolved", // active | responding | resolved | cancelled
+  responders: [
+    { guardianId: "user_789", status: "arrived", arrivedAt: timestamp, distance: 80 },
+    { guardianId: "user_101", status: "called_police", actionAt: timestamp }
+  ],
+  policeCalled: true,
+  resolvedAt: timestamp,
+  safeNowShown: true
+}
+
+// Collection: municipality_reports
+{
+  id: "mr_111",
+  zone: "Ward_7",
+  issueType: "broken_streetlight",
+  location: { lat: 12.97, lng: 77.59 },
+  incidentCount: 5,
+  severity: "high",
+  evidence: ["inc_789", "inc_790", "inc_791"],
+  reportGenerated: "Structured report text...",
+  sentTo: "bescom@bangalore.gov.in",
+  status: "pending", // pending | acknowledged | in_progress | resolved
+  publicScorecard: true,
+  responseTime: null,
+  createdAt: timestamp
+}
+
+Agent Architecture (10 Agents)
+All agents run as Google Cloud Functions or within Google AI Studio deployment.
+1. Guardian Agent (Coordinator)
+
+    Monitors all active walks
+    Checks for: route deviation, inactivity, ETA delay, new incidents
+    Decides: warn, prompt, or escalate
+    Triggers other agents as needed
+
+2. Prediction Agent
+
+    Inputs: historical incidents, time, weather, events, crowd density
+    Output: risk score 0-100 for any location/time
+    Proactive: "This area will be risky in 30 min"
+
+3. Route Agent
+
+    Inputs: start, end, time, user preferences
+    Output: safest route (not shortest)
+    Dynamic: reroutes if new incident reported
+
+4. Companion Agent
+
+    Talks to user during Walk Mode
+    Sends check-in prompts
+    Gentle reminders: "You're doing great, 5 min to go"
+
+5. Emergency Agent
+
+    Handles SOS trigger
+    Manages escalation chain
+    Coordinates guardian alerts
+
+6. Alert Agent
+
+    Sends push notifications
+    Manages notification priority
+    Handles quiet hours
+
+7. Voice Agent
+
+    Listens for "Astra help" or custom phrase
+    Speech-to-text in Hindi, Tamil, English, Bengali
+    Triggers Emergency Agent
+
+8. Vision Agent
+
+    Analyzes incident photos
+    Tags: dark, broken_light, deserted, suspicious_vehicle
+    Confidence score
+
+9. Help Point Agent
+
+    Finds nearest: police, hospital, shelter, women help center
+    Filters by: distance, open hours, rating
+
+10. Municipality Agent
+
+    Clusters incidents by infrastructure type
+    Generates structured report
+    Tracks response time
+    Updates public scorecard
