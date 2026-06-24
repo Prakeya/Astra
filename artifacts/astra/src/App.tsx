@@ -10,14 +10,23 @@ import { SOSScreen } from "@/pages/SOSScreen";
 import { SafeNow } from "@/pages/SafeNow";
 import { Profile } from "@/pages/Profile";
 import { GuardianOnboarding } from "@/pages/GuardianOnboarding";
+import { Dashboard } from "@/pages/Dashboard";
+import { GuardiansNearby } from "@/pages/GuardiansNearby";
+import { ReportIssue } from "@/pages/ReportIssue";
+import { CommunityImpact } from "@/pages/CommunityImpact";
+import { DistractionCall } from "@/pages/DistractionCall";
+import { CheckInTimer } from "@/pages/CheckInTimer";
+import { IncidentMap } from "@/pages/IncidentMap";
 import { BottomNav } from "@/components/BottomNav";
 
 const queryClient = new QueryClient();
 
+const HIDE_NAV = ["/", "/sos"];
+
 function Router() {
   return (
     <>
-      <main className="w-full flex-1 pb-20">
+      <main className="w-full flex-1">
         <Switch>
           <Route path="/" component={Landing} />
           <Route path="/home" component={Home} />
@@ -26,12 +35,19 @@ function Router() {
           <Route path="/safe" component={SafeNow} />
           <Route path="/profile" component={Profile} />
           <Route path="/guardian-onboarding" component={GuardianOnboarding} />
+          <Route path="/dashboard" component={Dashboard} />
+          <Route path="/guardians" component={GuardiansNearby} />
+          <Route path="/report" component={ReportIssue} />
+          <Route path="/community" component={CommunityImpact} />
+          <Route path="/distraction-call" component={DistractionCall} />
+          <Route path="/checkin" component={CheckInTimer} />
+          <Route path="/incident-map" component={IncidentMap} />
           <Route>
             <div className="p-8 text-center text-muted-foreground mt-20">Page not found</div>
           </Route>
         </Switch>
       </main>
-      <BottomNav />
+      <BottomNav hideOnPaths={HIDE_NAV} />
     </>
   );
 }
