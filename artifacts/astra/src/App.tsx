@@ -1,7 +1,8 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useState, useEffect } from "react";
 
 import { Landing } from "@/pages/Landing";
 import { Home } from "@/pages/Home";
@@ -17,15 +18,46 @@ import { CommunityImpact } from "@/pages/CommunityImpact";
 import { DistractionCall } from "@/pages/DistractionCall";
 import { CheckInTimer } from "@/pages/CheckInTimer";
 import { IncidentMap } from "@/pages/IncidentMap";
+import { VoiceActivation } from "@/pages/VoiceActivation";
 import { BottomNav } from "@/components/BottomNav";
+import { useVoiceActivation, VoiceTriggeredOverlay, VoiceStatusPill } from "@/components/VoiceListener";
 
 const queryClient = new QueryClient();
 
 const HIDE_NAV = ["/", "/sos"];
 
+const VOICE_ENABLED_KEY = "astra_voice_enabled";
+
+function GlobalVoiceListener() {
+  const [enabled, setEnabled] = useState(() => {
+    try { return localStorage.getItem(VOICE_ENABLED_KEY) === "true"; } catch { return false; }
+  });
+  const [location] = useLocation();
+  const active = enabled && location !== "/" && location !== "/sos" && location !== "/voice";
+  const { listening, triggered } = useVoiceActivation(active);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<boolean>).detail;
+      setEnabled(detail);
+      localStorage.setItem(VOICE_ENABLED_KEY, String(detail));
+    };
+    window.addEventListener("astra:voiceEnabled", handler);
+    return () => window.removeEventListener("astra:voiceEnabled", handler);
+  }, []);
+
+  return (
+    <>
+      <VoiceStatusPill listening={listening} />
+      <VoiceTriggeredOverlay triggered={triggered} />
+    </>
+  );
+}
+
 function Router() {
   return (
     <>
+      <GlobalVoiceListener />
       <main className="w-full flex-1">
         <Switch>
           <Route path="/" component={Landing} />
@@ -42,6 +74,7 @@ function Router() {
           <Route path="/distraction-call" component={DistractionCall} />
           <Route path="/checkin" component={CheckInTimer} />
           <Route path="/incident-map" component={IncidentMap} />
+          <Route path="/voice" component={VoiceActivation} />
           <Route>
             <div className="p-8 text-center text-muted-foreground mt-20">Page not found</div>
           </Route>

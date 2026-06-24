@@ -52,8 +52,8 @@ const SECTIONS: Section[] = [
     items: [
       { label: "Distraction Call", icon: <Phone size={16}/>, href: "/distraction-call" },
       { label: "Check-in Timer", icon: <Timer size={16}/>, href: "/checkin" },
-      { label: "Voice Activation", icon: <Mic size={16}/>, href: "/checkin", badge: "Soon" },
-      { label: "Background Mode", icon: <Wifi size={16}/>, href: "/checkin", badge: "Soon" },
+      { label: "Voice Activation", icon: <Mic size={16}/>, href: "/voice" },
+      { label: "Background Mode", icon: <Wifi size={16}/>, href: "/voice", badge: "Soon" },
     ],
   },
   {
