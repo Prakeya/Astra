@@ -35,34 +35,34 @@
   --radius-sm: calc(var(--radius) - 4px);
 }
 
-:root, .dark {
-  /* Dark theme is default */
-  --background: 225 50% 8%;
-  --foreground: 260 25% 90%;
+:root {
+  /* Light theme — clean, bright, modern */
+  --background: 0 0% 100%;
+  --foreground: 225 20% 15%;
   
-  --card: 225 40% 12%;
-  --card-foreground: 260 25% 90%;
+  --card: 0 0% 100%;
+  --card-foreground: 225 20% 15%;
   
-  --popover: 225 40% 12%;
-  --popover-foreground: 260 25% 90%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 225 20% 15%;
   
   --primary: 350 80% 62%;
   --primary-foreground: 0 0% 100%;
   
-  --secondary: 185 60% 45%;
+  --secondary: 185 70% 45%;
   --secondary-foreground: 0 0% 100%;
   
-  --muted: 225 20% 25%;
-  --muted-foreground: 260 10% 60%;
+  --muted: 210 20% 96%;
+  --muted-foreground: 215 16% 47%;
   
-  --accent: 225 30% 18%;
-  --accent-foreground: 260 25% 90%;
+  --accent: 210 25% 96%;
+  --accent-foreground: 225 20% 15%;
   
   --destructive: 0 85% 55%;
   --destructive-foreground: 0 0% 100%;
   
-  --border: 225 30% 18%;
-  --input: 225 30% 18%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
   --ring: 350 80% 62%;
   
   --radius: 1rem;

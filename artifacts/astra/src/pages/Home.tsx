@@ -1,214 +1,152 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { Link, useLocation } from "wouter";
-import { MapBackground } from "@/components/MapBackground";
-import { SafetyHeatmap } from "@/components/SafetyHeatmap";
-import { ZONES, LEVEL_COLOR } from "@/lib/safetyData";
-import { useState, useEffect } from "react";
-import { Navigation, RefreshCw, Layers } from "lucide-react";
+import { useState } from "react";
+import { GoogleMap } from "@/components/GoogleMap";
+import { useLocation } from "wouter";
 
-const dangerCount = ZONES.filter(z => z.level === "danger").length;
-const cautionCount = ZONES.filter(z => z.level === "caution").length;
-const safeCount = ZONES.filter(z => z.level === "safe").length;
-
-const ROTATING_TIPS = [
-  "2 guardians active within 200m of you",
-  "MG Road is the safest route right now",
-  "Check-in timer recommended after 9 PM",
-  "Station Road: avoid after dark tonight",
-  "3 zones are fully safe near you",
-];
+interface Marker {
+  position: { lat: number; lng: number };
+  title: string;
+  color: string;
+}
 
 export function Home() {
   const [, setLocation] = useLocation();
-  const [showHeatmap, setShowHeatmap] = useState(true);
-  const [tipIdx, setTipIdx] = useState(0);
-  const [refreshed, setRefreshed] = useState(false);
+  const [center] = useState({ lat: 40.7128, lng: -74.0060 });
 
-  useEffect(() => {
-    const t = setInterval(() => setTipIdx(i => (i + 1) % ROTATING_TIPS.length), 4000);
-    return () => clearInterval(t);
-  }, []);
+  const markers: Marker[] = [
+    { position: { lat: 40.7128, lng: -74.0060 }, title: "Safe Zone", color: "#22c55e" },
+    { position: { lat: 40.7200, lng: -74.0100 }, title: "Caution", color: "#eab308" },
+    { position: { lat: 40.7150, lng: -74.0200 }, title: "Alert", color: "#ef4444" },
+    { position: { lat: 40.7250, lng: -74.0050 }, title: "Safe Zone", color: "#22c55e" },
+    { position: { lat: 40.7180, lng: -74.0150 }, title: "Alert", color: "#ef4444" },
+  ];
 
-  const handleRefresh = () => {
-    setRefreshed(true);
-    setTimeout(() => setRefreshed(false), 1200);
-  };
-
-  const areaStatus =
-    dangerCount === 0 ? "✓ Your area is mostly safe right now"
-    : dangerCount <= 1 ? "⚠ Some caution zones nearby — check the map"
-    : "⚠ Several alert zones — prefer safe routes";
+  const safeCount = markers.filter(m => m.color === "#22c55e").length;
+  const cautionCount = markers.filter(m => m.color === "#eab308").length;
+  const alertCount = markers.filter(m => m.color === "#ef4444").length;
 
   return (
-    <div className="relative h-[100dvh] w-full overflow-hidden flex flex-col" style={{ background: "#080f1c" }}>
-      <MapBackground />
+    <div className="flex flex-col h-full w-full relative">
+      {/* Map takes full available space */}
+      <div className="flex-1 relative min-h-0">
+        <GoogleMap 
+          center={center}
+          zoom={14}
+          markers={markers}
+          className="w-full h-full"
+        />
+      </div>
 
-      {/* Heatmap overlay */}
-      <AnimatePresence>
-        {showHeatmap && (
-          <motion.div key="heatmap" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="absolute inset-0" style={{ zIndex: 2 }}>
-            <SafetyHeatmap />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Bottom overlay panel */}
+      <div className="absolute bottom-16 left-0 right-0 pointer-events-none">
+        <div className="mx-4 mb-2 pointer-events-auto">
+          {/* Safety stats card */}
+          <div className="bg-[#1e293b]/95 backdrop-blur-md rounded-2xl p-4 border border-slate-700/50 shadow-2xl">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-white font-semibold text-sm uppercase tracking-wider">Area Safety Now</h3>
+              <span className="text-slate-400 text-xs">Tap zones on map</span>
+            </div>
+            
+            <div className="flex justify-between mb-3">
+              <div className="text-center">
+                <div className="text-green-400 text-2xl font-bold">{safeCount}</div>
+                <div className="text-slate-400 text-xs">Safe zones</div>
+              </div>
+              <div className="text-center">
+                <div className="text-yellow-400 text-2xl font-bold">{cautionCount}</div>
+                <div className="text-slate-400 text-xs">Caution zones</div>
+              </div>
+              <div className="text-center">
+                <div className="text-rose-400 text-2xl font-bold">{alertCount}</div>
+                <div className="text-slate-400 text-xs">Alert zones</div>
+              </div>
+            </div>
 
-      {/* Gradient scrim — bottom */}
-      <div className="absolute inset-0 pointer-events-none" style={{
-        background: "linear-gradient(to bottom, rgba(8,15,28,0.4) 0%, transparent 32%, rgba(8,15,28,0.88) 60%, rgba(8,15,28,0.99) 100%)",
-        zIndex: 6,
-      }} />
+            {/* Progress bar */}
+            <div className="flex h-1.5 rounded-full overflow-hidden mb-2">
+              <div className="bg-green-500" style={{ width: `${(safeCount / markers.length) * 100}%` }} />
+              <div className="bg-yellow-500" style={{ width: `${(cautionCount / markers.length) * 100}%` }} />
+              <div className="bg-rose-500" style={{ width: `${(alertCount / markers.length) * 100}%` }} />
+            </div>
 
-      {/* ── TOP BAR ── */}
-      <div className="relative flex items-start justify-between px-4 pt-12 pb-3" style={{ zIndex: 10 }}>
-        <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}>
-          <h1 className="font-bold text-2xl text-white tracking-tight" style={{ fontFamily: "'Outfit', sans-serif" }}>
-            Astra
-          </h1>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-xs text-green-300 font-medium">2 guardians near you</span>
+            <p className="text-slate-400 text-xs text-center">
+              ⚠ Several alert zones — prefer safe routes
+            </p>
           </div>
-        </motion.div>
 
-        <div className="flex gap-2">
-          <motion.button
-            onClick={() => setShowHeatmap(h => !h)}
-            whileTap={{ scale: 0.9 }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-full border font-medium text-xs transition-all"
-            style={{
-              background: showHeatmap ? "rgba(232,93,122,0.15)" : "rgba(15,25,45,0.85)",
-              borderColor: showHeatmap ? "rgba(232,93,122,0.4)" : "rgba(255,255,255,0.12)",
-              color: showHeatmap ? "#e85d7a" : "#94a3b8",
-              backdropFilter: "blur(12px)",
-            }}
+          {/* Start Walking button */}
+          <button 
+            onClick={() => setLocation("/walk")}
+            className="w-full mt-3 bg-gradient-to-r from-rose-500 to-rose-600 text-white py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 shadow-lg hover:from-rose-600 hover:to-rose-700 transition-all active:scale-95"
           >
-            <Layers size={13} />
-            {showHeatmap ? "Hide" : "Heatmap"}
-          </motion.button>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+            Start Walking
+          </button>
 
-          <motion.button
-            onClick={handleRefresh}
-            whileTap={{ scale: 0.9 }}
-            className="w-9 h-9 rounded-full flex items-center justify-center border"
-            style={{ background: "rgba(15,25,45,0.85)", borderColor: "rgba(255,255,255,0.12)", backdropFilter: "blur(12px)" }}
-          >
-            <motion.div animate={refreshed ? { rotate: 360 } : {}} transition={{ duration: 0.6 }}>
-              <RefreshCw size={14} className={refreshed ? "text-primary" : "text-slate-400"} />
-            </motion.div>
-          </motion.button>
+          {/* Last walk info */}
+          <div className="flex items-center justify-between mt-3 px-2">
+            <div className="text-slate-300 text-sm">
+              <div>Last walk: Home → College</div>
+              <div className="text-slate-500 text-xs">12 min · 3 guardians · Safe ✓</div>
+            </div>
+            <button 
+              onClick={() => setLocation("/walk")}
+              className="text-rose-400 text-sm font-medium hover:text-rose-300 transition-colors"
+            >
+              Again
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* ── LEGEND ── */}
-      <AnimatePresence>
-        {showHeatmap && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-            className="absolute left-4 right-4 flex gap-2 justify-center"
-            style={{ top: 110, zIndex: 10 }}
-          >
-            {([
-              { level: "safe", label: `${safeCount} Safe` },
-              { level: "caution", label: `${cautionCount} Caution` },
-              { level: "danger", label: `${dangerCount} Alert` },
-            ] as const).map(({ level, label }) => (
-              <div key={level} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border"
-                style={{ background: `${LEVEL_COLOR[level]}12`, borderColor: `${LEVEL_COLOR[level]}35`, backdropFilter: "blur(8px)" }}>
-                <div className="w-2 h-2 rounded-full" style={{ background: LEVEL_COLOR[level] }} />
-                <span className="text-[10px] font-semibold" style={{ color: LEVEL_COLOR[level] }}>{label}</span>
-              </div>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── ROTATING TIP ── */}
-      <div className="absolute left-4 right-4 overflow-hidden" style={{ top: showHeatmap ? 152 : 112, zIndex: 10 }}>
-        <AnimatePresence mode="wait">
-          <motion.div key={tipIdx}
-            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.35 }}
-            className="px-4 py-2.5 rounded-2xl border text-xs font-medium text-slate-200 flex items-center gap-2"
-            style={{ background: "rgba(10,15,30,0.75)", borderColor: "rgba(255,255,255,0.1)", backdropFilter: "blur(12px)" }}>
-            <span className="text-base shrink-0">💡</span>
-            {ROTATING_TIPS[tipIdx]}
-          </motion.div>
-        </AnimatePresence>
-      </div>
-
-      {/* ── BOTTOM PANEL ── */}
-      <div className="relative mt-auto px-4 pb-24 flex flex-col gap-3" style={{ zIndex: 10 }}>
-
-        {/* Area safety summary */}
-        <AnimatePresence>
-          {showHeatmap && (
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }}
-              className="rounded-2xl border overflow-hidden"
-              style={{ background: "rgba(10,15,30,0.93)", borderColor: "rgba(255,255,255,0.09)", backdropFilter: "blur(16px)" }}>
-              <div className="px-4 py-2.5 border-b flex items-center justify-between"
-                   style={{ borderColor: "rgba(255,255,255,0.07)" }}>
-                <span className="text-xs font-semibold text-white uppercase tracking-wider">Area Safety Now</span>
-                <span className="text-[10px] text-slate-500">Tap zones on map</span>
-              </div>
-              <div className="flex">
-                {([
-                  { level: "safe", count: safeCount, label: "Safe" },
-                  { level: "caution", count: cautionCount, label: "Caution" },
-                  { level: "danger", count: dangerCount, label: "Alert" },
-                ] as const).map(({ level, count, label }) => (
-                  <div key={level} className="flex-1 px-3 py-3 text-center border-r last:border-r-0"
-                       style={{ borderColor: "rgba(255,255,255,0.07)" }}>
-                    <div className="text-xl font-bold" style={{ color: LEVEL_COLOR[level] }}>{count}</div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">{label} zone{count !== 1 ? "s" : ""}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="px-4 pb-3 pt-1">
-                <div className="flex h-1.5 rounded-full overflow-hidden gap-px">
-                  <motion.div initial={{ width: 0 }} animate={{ width: `${(safeCount / ZONES.length) * 100}%` }}
-                    transition={{ duration: 0.8, delay: 0.2 }}
-                    style={{ background: LEVEL_COLOR.safe, height: "100%" }} />
-                  <motion.div initial={{ width: 0 }} animate={{ width: `${(cautionCount / ZONES.length) * 100}%` }}
-                    transition={{ duration: 0.8, delay: 0.35 }}
-                    style={{ background: LEVEL_COLOR.caution, height: "100%" }} />
-                  <motion.div initial={{ width: 0 }} animate={{ width: `${(dangerCount / ZONES.length) * 100}%` }}
-                    transition={{ duration: 0.8, delay: 0.5 }}
-                    style={{ background: LEVEL_COLOR.danger, height: "100%", borderRadius: "0 9999px 9999px 0" }} />
-                </div>
-                <p className="text-[10px] text-slate-500 mt-1.5 text-center">{areaStatus}</p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Start Walking CTA */}
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <Link href="/walk" className="block w-full">
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              className="w-full h-16 rounded-2xl font-bold text-white text-lg shadow-lg shadow-primary/30 flex items-center justify-center gap-3"
-              style={{ background: "linear-gradient(135deg, #e85d7a 0%, #c23a5a 100%)" }}
-            >
-              <Navigation size={22} />
-              Start Walking
-            </motion.button>
-          </Link>
-        </motion.div>
-
-        {/* Last walk */}
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-          className="rounded-2xl px-4 py-3 border flex items-center justify-between"
-          style={{ background: "rgba(10,15,30,0.85)", borderColor: "rgba(255,255,255,0.08)", backdropFilter: "blur(12px)" }}>
+      {/* Top header overlay */}
+      <div className="absolute top-0 left-0 right-0 p-4 pointer-events-none">
+        <div className="flex items-center justify-between pointer-events-auto">
           <div>
-            <span className="text-sm text-white font-medium">Last walk: Home → College</span>
-            <div className="text-xs text-slate-400 mt-0.5">12 min · 3 guardians · Safe ✓</div>
+            <h1 className="text-white text-2xl font-bold">Astra</h1>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+              <span className="text-green-400 text-sm">2 guardians near you</span>
+            </div>
           </div>
-          <button onClick={() => setLocation("/walk")}
-            className="text-xs text-primary font-semibold border border-primary/30 px-3 py-1.5 rounded-full hover:bg-primary/10 transition-colors">
-            Again
-          </button>
-        </motion.div>
+          <div className="flex gap-2">
+            <button className="bg-slate-800/80 backdrop-blur-sm text-slate-300 px-3 py-2 rounded-xl text-sm border border-slate-700 hover:bg-slate-700 transition-colors">
+              Hide
+            </button>
+            <button className="bg-slate-800/80 backdrop-blur-sm text-slate-300 p-2 rounded-xl border border-slate-700 hover:bg-slate-700 transition-colors">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Safety pills */}
+        <div className="flex gap-2 mt-3 pointer-events-auto">
+          <div className="bg-green-500/20 border border-green-500/30 text-green-400 px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 bg-green-400 rounded-full" />
+            {safeCount} Safe
+          </div>
+          <div className="bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full" />
+            {cautionCount} Caution
+          </div>
+          <div className="bg-rose-500/20 border border-rose-500/30 text-rose-400 px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 bg-rose-400 rounded-full" />
+            {alertCount} Alert
+          </div>
+        </div>
+
+        {/* Check-in timer recommendation */}
+        <div className="mt-3 bg-slate-800/80 backdrop-blur-sm border border-slate-700 rounded-xl p-3 flex items-center gap-3 pointer-events-auto">
+          <div className="w-8 h-8 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+            <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
+            </svg>
+          </div>
+          <span className="text-slate-300 text-sm">Check-in timer recommended after 9 PM</span>
+        </div>
       </div>
     </div>
   );
