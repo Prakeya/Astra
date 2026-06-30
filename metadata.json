@@ -1,0 +1,6 @@
+{
+  "name": "Astra",
+  "description": "A secure, intuitive personal safety companion for women featuring real-time walk mode tracking, instant multi-agent SOS alerts, and a trusted community guardian network.",
+  "requestFramePermissions": ["geolocation", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
