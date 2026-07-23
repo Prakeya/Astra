@@ -160,22 +160,28 @@ export function AISafetyAssistantDrawer({ isOpen, onClose, initialPrompt }: Prop
           {/* Quick Suggestions */}
           <div className="p-2.5 bg-slate-950/40 border-t border-cyan-500/10 flex gap-1.5 overflow-x-auto no-scrollbar shrink-0">
             <button
-              onClick={() => handleSend("How is the safety score computed?")}
+              onClick={() => handleSend("Why is this area dangerous?")}
               className="text-[10px] bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/20 text-cyan-200 px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 transition-all font-semibold"
             >
-              🛡 Explain Safety Score
+              ⚠️ Why is this area dangerous?
             </button>
             <button
-              onClick={() => handleSend("Are there any active danger hotspots near me?")}
+              onClick={() => handleSend("Why did my safety score decrease?")}
               className="text-[10px] bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/20 text-cyan-200 px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 transition-all font-semibold"
             >
-              ⚠️ Check Hotspots
+              📉 Why did safety score decrease?
             </button>
             <button
-              onClick={() => handleSend("How does the Safe Route engine select safe paths?")}
+              onClick={() => handleSend("Which route is safest right now?")}
               className="text-[10px] bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/20 text-cyan-200 px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 transition-all font-semibold"
             >
-              🗺 Safe Route Logic
+              🗺 Which route is safest?
+            </button>
+            <button
+              onClick={() => handleSend("What incidents happened nearby?")}
+              className="text-[10px] bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/20 text-cyan-200 px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 transition-all font-semibold"
+            >
+              📍 What incidents happened nearby?
             </button>
           </div>
 

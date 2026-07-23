@@ -19,6 +19,12 @@ export function Home() {
   const [mapExpanded, setMapExpanded] = useState(false);
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
+  const [demoLoadedMessage, setDemoLoadedMessage] = useState<string | null>(null);
+
+  const triggerDemoMessage = (msg: string) => {
+    setDemoLoadedMessage(msg);
+    setTimeout(() => setDemoLoadedMessage(null), 3000);
+  };
 
   useEffect(() => {
     // Determine center
@@ -225,6 +231,14 @@ export function Home() {
           )}
         </div>
 
+        {/* Toast Notification for Demo Data Actions */}
+        {demoLoadedMessage && (
+          <div className="bg-teal-600 text-white px-4 py-2.5 rounded-2xl text-xs font-bold text-center shadow-lg border border-teal-400 animate-fade-in flex items-center justify-center gap-2">
+            <CheckCircle2 size={16} />
+            <span>{demoLoadedMessage}</span>
+          </div>
+        )}
+
         {/* Sandbox Mobile Test Panel */}
         <div className="bg-slate-900/95 text-slate-100 rounded-3xl p-4 border border-slate-800 shadow-xl flex flex-col gap-2.5 shrink-0 select-none">
           <div className="flex justify-between items-center border-b border-slate-800 pb-2">
@@ -235,24 +249,26 @@ export function Home() {
             <span className="text-[8px] font-mono font-black bg-slate-800 px-2 py-0.5 rounded text-slate-400">DEMO CONSOLE</span>
           </div>
           <p className="text-[9px] text-slate-400 font-bold leading-normal">
-            To test on your phone, you can start with a clean empty slate (default) and submit reports, or click below to seed reports around your current location:
+            To test on your phone, you can start with a clean empty slate (default) and submit reports, or click below to load sample demo incidents:
           </p>
           <div className="flex gap-2">
             <button
               onClick={() => {
                 seedSampleComplaints(center);
+                triggerDemoMessage("Demo incidents loaded successfully.");
               }}
               className="flex-1 py-2 bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all shadow-md shadow-cyan-950/40"
             >
-              🚀 Seed Demo Incidents
+              Load Demo Data
             </button>
             <button
               onClick={() => {
                 clearComplaints();
+                triggerDemoMessage("All safety reports cleared.");
               }}
               className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 active:bg-slate-900 border border-slate-700 text-slate-300 font-black text-[9px] uppercase tracking-widest rounded-xl transition-all"
             >
-              🗑 Clear All Reports
+              Clear All Reports
             </button>
           </div>
         </div>

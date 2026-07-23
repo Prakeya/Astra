@@ -69,6 +69,8 @@ export function ReportIssue() {
     }
   };
 
+  const [submittingStage, setSubmittingStage] = useState<number>(0);
+
   const handleSubmit = async () => {
     if (!selectedType) return;
     const item = ISSUE_TYPES.find(t => t.id === selectedType);
@@ -76,6 +78,10 @@ export function ReportIssue() {
 
     const baseCoords = coords || getMapCenterFromUser();
 
+    setSubmitted(true);
+    setSubmittingStage(1); // "Analyzing complaint with Gemini AI..."
+
+    // Trigger store update
     await addComplaint({
       type: selectedType,
       label,
@@ -88,29 +94,47 @@ export function ReportIssue() {
       imageUrl: imagePreview || undefined,
     });
 
-    setSubmitted(true);
-    setTimeout(() => setLocation("/incident-map"), 2200);
+    setTimeout(() => setSubmittingStage(2), 600); // "Computing spatial safety score..."
+    setTimeout(() => setSubmittingStage(3), 1200); // "Updating live heatmap & hotspots..."
+    setTimeout(() => setSubmittingStage(4), 1800); // "Generating safer route recommendations..."
+    setTimeout(() => setLocation("/incident-map"), 2500);
   };
 
   if (submitted) {
     return (
-      <div className="min-h-[100dvh] flex flex-col items-center justify-center px-8 bg-[#082f49] text-white font-sans">
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center px-6 bg-[#082f49] text-white font-sans">
         <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
+          initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring" }}
-          className="text-center bg-slate-900/90 border border-cyan-500/30 p-8 rounded-3xl shadow-2xl backdrop-blur-md"
+          className="w-full max-w-sm text-center bg-slate-900/90 border border-cyan-500/30 p-6 rounded-3xl shadow-2xl backdrop-blur-md"
         >
-          <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-400/30 flex items-center justify-center mx-auto mb-4">
-            <CheckCircle size={36} />
+          <div className="w-14 h-14 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 flex items-center justify-center mx-auto mb-4">
+            <Sparkles size={30} className="animate-spin text-cyan-400" />
           </div>
-          <h2 className="text-xl font-black text-white mb-2 uppercase tracking-wider">Report Logged & AI Analyzed</h2>
-          <p className="text-cyan-200/80 text-xs font-semibold leading-relaxed mb-4">
-            Thank you. Your report has updated the live community risk heatmap, safety score, and safe route routing engine.
+
+          <h2 className="text-lg font-black text-white mb-1 uppercase tracking-wider">Live AI Pipeline Active</h2>
+          <p className="text-cyan-200/70 text-xs font-semibold mb-5">
+            Your complaint is being processed in real-time across the ASTRA platform.
           </p>
-          <div className="inline-flex items-center gap-2 text-[10px] bg-cyan-950/80 border border-cyan-400/30 text-cyan-300 px-3 py-1.5 rounded-full font-mono font-bold">
-            <Sparkles size={12} className="animate-spin text-cyan-400" />
-            <span>Redirecting to Live Incident Map...</span>
+
+          <div className="space-y-2 text-left text-xs font-semibold bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800">
+            <div className={`flex items-center gap-2.5 ${submittingStage >= 1 ? "text-cyan-300" : "text-slate-600"}`}>
+              <span className={`w-2 h-2 rounded-full ${submittingStage >= 1 ? "bg-cyan-400 animate-pulse" : "bg-slate-700"}`} />
+              <span>1. Analyzing complaint with Gemini AI...</span>
+            </div>
+            <div className={`flex items-center gap-2.5 ${submittingStage >= 2 ? "text-cyan-300" : "text-slate-600"}`}>
+              <span className={`w-2 h-2 rounded-full ${submittingStage >= 2 ? "bg-cyan-400 animate-pulse" : "bg-slate-700"}`} />
+              <span>2. Computing spatial safety score...</span>
+            </div>
+            <div className={`flex items-center gap-2.5 ${submittingStage >= 3 ? "text-cyan-300" : "text-slate-600"}`}>
+              <span className={`w-2 h-2 rounded-full ${submittingStage >= 3 ? "bg-cyan-400 animate-pulse" : "bg-slate-700"}`} />
+              <span>3. Updating live heatmap & hotspots...</span>
+            </div>
+            <div className={`flex items-center gap-2.5 ${submittingStage >= 4 ? "text-cyan-300" : "text-slate-600"}`}>
+              <span className={`w-2 h-2 rounded-full ${submittingStage >= 4 ? "bg-cyan-400 animate-pulse" : "bg-slate-700"}`} />
+              <span>4. Generating safer route recommendations...</span>
+            </div>
           </div>
         </motion.div>
       </div>

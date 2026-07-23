@@ -154,7 +154,7 @@ export function IncidentMap() {
               <Shield className="text-[#0d9488]/40 mx-auto mb-3" size={36} />
               <div className="text-xs text-[#083344] font-black uppercase tracking-wider mb-1">No Active Reports</div>
               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider leading-relaxed">
-                No safety complaints have been reported yet. Tap "Seed Demo Incidents" on the Home page sandbox console to simulate reports, or use the "Report Issue" page to create one.
+                No safety complaints have been reported yet. Tap "Load Demo Data" on the Home page sandbox console to simulate reports, or use the "Report Issue" page to create one.
               </p>
             </div>
           ) : (
@@ -240,23 +240,60 @@ export function IncidentMap() {
                   </div>
                 ) : null}
 
-                {/* AI Threat Analysis Box */}
+                {/* AI Threat Analysis & Hotspot Intelligence Box */}
                 {selected.aiAnalysis && (
-                  <div className="mb-4 bg-slate-900 text-white rounded-2xl p-3.5 border border-cyan-500/30 font-sans shadow-md">
-                    <div className="flex items-center justify-between mb-2 border-b border-cyan-500/20 pb-1.5">
+                  <div className="mb-4 bg-slate-900 text-white rounded-2xl p-4 border border-cyan-500/30 font-sans shadow-md">
+                    <div className="flex items-center justify-between mb-2.5 border-b border-cyan-500/20 pb-2">
                       <span className="text-[10px] font-black uppercase tracking-wider text-cyan-300 flex items-center gap-1.5">
-                        <Shield size={12} className="text-cyan-400" />
-                        AI Threat Intelligence
+                        <Shield size={13} className="text-cyan-400" />
+                        AI Threat Intelligence & Hotspot Analysis
                       </span>
                       <span className="text-[9px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full font-mono font-bold">
-                        Impact: -{selected.aiAnalysis.safetyImpactScore || 15} pts
+                        Confidence: {Math.round((selected.aiAnalysis.confidenceScore || 0.92) * 100)}%
                       </span>
                     </div>
-                    <p className="text-xs text-slate-200 font-medium mb-2 leading-relaxed">
+
+                    <p className="text-xs text-slate-200 font-medium mb-3 leading-relaxed">
                       {selected.aiAnalysis.summary}
                     </p>
-                    <div className="text-[10px] text-cyan-200/90 font-semibold bg-cyan-950/60 p-2 rounded-xl border border-cyan-500/20">
-                      💡 <strong>Recommendation:</strong> {selected.aiAnalysis.recommendedAction}
+
+                    {selected.aiAnalysis.reasoning && (
+                      <p className="text-[11px] text-slate-300 italic mb-3 bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
+                        "{selected.aiAnalysis.reasoning}"
+                      </p>
+                    )}
+
+                    {selected.aiAnalysis.riskIndicators && selected.aiAnalysis.riskIndicators.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-3">
+                        {selected.aiAnalysis.riskIndicators.map((tag: string, idx: number) => (
+                          <span key={idx} className="text-[9px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider border border-rose-500/30">
+                            ⚠️ {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="text-[10px] text-cyan-200 font-semibold bg-cyan-950/70 p-2.5 rounded-xl border border-cyan-500/20 leading-relaxed mb-3">
+                      💡 <strong>Recommended Action:</strong> {selected.aiAnalysis.recommendedAction}
+                    </div>
+
+                    {/* Nearby Emergency Facilities */}
+                    <div className="pt-2 border-t border-slate-800">
+                      <div className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-2">Nearby Emergency Facilities</div>
+                      <div className="grid grid-cols-3 gap-1.5 text-center">
+                        <div className="bg-slate-800/90 p-2 rounded-xl border border-slate-700">
+                          <div className="text-[9px] font-bold text-teal-300 truncate">Police Desk</div>
+                          <div className="text-[10px] font-mono font-black text-white">320m</div>
+                        </div>
+                        <div className="bg-slate-800/90 p-2 rounded-xl border border-slate-700">
+                          <div className="text-[9px] font-bold text-teal-300 truncate">Hospital ER</div>
+                          <div className="text-[10px] font-mono font-black text-white">550m</div>
+                        </div>
+                        <div className="bg-slate-800/90 p-2 rounded-xl border border-slate-700">
+                          <div className="text-[9px] font-bold text-teal-300 truncate">Safe Haven</div>
+                          <div className="text-[10px] font-mono font-black text-white">180m</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
