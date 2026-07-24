@@ -3,15 +3,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { MapBackground } from "@/components/MapBackground";
 import { SOSButton } from "@/components/SOSButton";
-import { ZONES, LEVEL_COLOR, type Zone } from "@/lib/safetyData";
-import { getComplaints, computeHeatmapZones, type Complaint } from "@/lib/safetyStore";
+import { LEVEL_COLOR } from "@/lib/safetyData";
+import { getComplaints, computeHeatmapZones, type DynamicHeatmapZone, type Complaint } from "@/lib/safetyStore";
 import { subscribeToComplaints, subscribeToGuardians } from "@/lib/firebaseService";
 import { GuardianLocation } from "@/types/safety";
 import { StarryBackground } from "@/components/StarryBackground";
 import {
   ArrowLeft, Navigation, AlertTriangle, CheckCircle,
   Shield, Clock, Zap, MapPin, CheckCircle2, ShieldCheck, Compass, Info, Users,
-  ArrowUp, ArrowUpRight, RefreshCw, Sparkles, Search, X
+  ArrowUp, ArrowUpRight, Sparkles, Search, X
 } from "lucide-react";
 
 const POPULAR_LOCATIONS = [
@@ -47,32 +47,10 @@ const ENCOURAGEMENTS = [
   "Secure zone arrival confirmed.",
 ];
 
-function getRouteZones(dest: string): Zone[] {
-  const d = dest.toLowerCase();
-  if (!d) return [];
-  const ROUTE_MAP: Record<string, string[]> = {
-    college:  ["z1", "z3", "z4"],
-    office:   ["z2", "z3", "z6"],
-    metro:    ["z1", "z3"],
-    station:  ["z1", "z3"],
-    mall:     ["z3", "z6"],
-    hospital: ["z3", "z7"],
-    home:     ["z5", "z3"],
-    park:     ["z2", "z3"],
-    library:  ["z3", "z4"],
-  };
-  for (const [key, ids] of Object.entries(ROUTE_MAP)) {
-    if (d.includes(key)) {
-      return ids.map(id => ZONES.find(z => z.id === id)!).filter(Boolean);
-    }
-  }
-  return [ZONES[2], ZONES[5]];
-}
-
-function getWalkAlerts(zones: Zone[]): { trigger: number; zone: Zone }[] {
+function getWalkAlerts(zones: DynamicHeatmapZone[]): { trigger: number; zone: DynamicHeatmapZone }[] {
   const dangerZones = zones.filter(z => z.level === "danger");
   const cautionZones = zones.filter(z => z.level === "caution");
-  const alerts: { trigger: number; zone: Zone }[] = [];
+  const alerts: { trigger: number; zone: DynamicHeatmapZone }[] = [];
   if (dangerZones[0]) alerts.push({ trigger: 18, zone: dangerZones[0] });
   if (cautionZones[0]) alerts.push({ trigger: 38, zone: cautionZones[0] });
   if (dangerZones[1]) alerts.push({ trigger: 55, zone: dangerZones[1] });
@@ -123,9 +101,9 @@ export function WalkMode() {
 
   const totalDist = routePreference === "safe" ? safeDistance : shortestDistance;
 
-  const [zoneAlert, setZoneAlert] = useState<Zone | null>(null);
+  const [zoneAlert, setZoneAlert] = useState<DynamicHeatmapZone | null>(null);
   const [rerouted, setRerouted] = useState(false);
-  const [passedZones, setPassedZones] = useState<Zone[]>([]);
+  const [passedZones, setPassedZones] = useState<DynamicHeatmapZone[]>([]);
   const [walkStart, setWalkStart] = useState<Date | null>(null);
   const [encourageMsg] = useState(ENCOURAGEMENTS[Math.floor(Math.random() * ENCOURAGEMENTS.length)]);
   const tickRef = useRef<NodeJS.Timeout | null>(null);
@@ -373,13 +351,13 @@ export function WalkMode() {
           }
         }
         
-        // Trigger Dim Lights alert popup
-        if (e < 15 && next >= 15) {
+        // Trigger Dim Lights alert popup if risk zones exist on route
+        if (e < 15 && next >= 15 && (routeDanger.length > 0 || routeCaution.length > 0)) {
           setShowDimLightsPopup(true);
         }
 
-        // Trigger Co-Walker matching popup
-        if (e < 35 && next >= 35) {
+        // Trigger Co-Walker matching popup if live guardians exist
+        if (e < 35 && next >= 35 && liveGuardians.length > 0) {
           setShowCoWalkerPopup(true);
         }
 
@@ -442,7 +420,7 @@ export function WalkMode() {
                 </button>
               </div>
 
-              {/* AI Advisor / Tactical Radar Bar with Refresh Button */}
+              {/* AI Advisor / Tactical Radar Bar */}
               <div className="bg-slate-950/85 backdrop-blur-md border border-slate-800 p-3.5 rounded-3xl shadow-xl flex items-center justify-between mb-4 text-white">
                 <div className="flex items-center gap-2.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
@@ -455,15 +433,6 @@ export function WalkMode() {
                     </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => querySafestRoute(origin, destination, true)}
-                  disabled={isQuerying || !origin.trim() || !destination.trim()}
-                  className="p-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 disabled:opacity-30 transition-all border border-slate-700 flex items-center justify-center shrink-0"
-                  title="Refresh Safety Analysis"
-                  data-testid="btn-refresh-route-analysis"
-                >
-                  <RefreshCw size={14} className={isQuerying ? "animate-spin text-cyan-400" : "text-slate-300"} />
-                </button>
               </div>
 
               <div className="mb-4">

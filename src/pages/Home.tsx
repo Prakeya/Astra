@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { GoogleMap } from "@/components/GoogleMap";
 import { useLocation } from "wouter";
-import { Shield, MapPin, Users, Bell, Navigation, RefreshCw, EyeOff, AlertTriangle, CheckCircle2, ChevronRight, Compass, Sparkles, MessageSquare } from "lucide-react";
+import { Shield, MapPin, Users, Bell, Navigation, EyeOff, AlertTriangle, CheckCircle2, ChevronRight, Compass, Sparkles, MessageSquare, RefreshCw } from "lucide-react";
 import { StarryBackground } from "@/components/StarryBackground";
 import { getMapCenterFromUser } from "@/lib/indiaStates";
 import { getComplaints, seedSampleComplaints, clearComplaints, calculateSafetyScore, type Complaint } from "@/lib/safetyStore";
@@ -27,20 +27,6 @@ export function Home() {
   const triggerDemoMessage = (msg: string) => {
     setDemoLoadedMessage(msg);
     setTimeout(() => setDemoLoadedMessage(null), 3000);
-  };
-
-  const handleRefresh = () => {
-    const unsubC = subscribeToComplaints((data) => {
-      setComplaints(data);
-    });
-    const unsubG = subscribeToGuardians((data) => {
-      setLiveGuardians(data);
-    });
-    triggerDemoMessage("Refreshed live safety data from Firestore.");
-    setTimeout(() => {
-      unsubC();
-      unsubG();
-    }, 1000);
   };
 
   useEffect(() => {
@@ -126,13 +112,6 @@ export function Home() {
             >
               <Sparkles size={13} className="animate-pulse" />
               <span>AI Advisor</span>
-            </button>
-
-            <button
-              onClick={handleRefresh}
-              className="bg-white/60 hover:bg-white/80 text-[#085a70] p-2.5 rounded-2xl border border-[#085a70]/10 shadow-xs transition-all flex items-center justify-center"
-            >
-              <RefreshCw size={14} />
             </button>
           </div>
         </div>
@@ -253,6 +232,40 @@ export function Home() {
           )}
         </div>
 
+        {/* Safety Data Controller Sandbox */}
+        <div className="bg-white/50 backdrop-blur-md rounded-[2rem] p-3.5 border border-white/60 shadow-xs flex flex-col gap-2 shrink-0">
+          <div className="flex justify-between items-center px-1">
+            <span className="text-[10px] font-black uppercase tracking-wider text-[#083344]">
+              Safety Data Sandbox
+            </span>
+            <span className="text-[9px] font-bold text-slate-500">
+              {totalReports === 0 ? "Clean Slate (0 reports)" : `${totalReports} active report(s)`}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                seedSampleComplaints(center);
+                triggerDemoMessage("Demo safety incidents loaded!");
+              }}
+              className="flex-1 py-2.5 px-3 bg-[#085a70] hover:bg-[#074b5d] active:scale-95 text-white font-black text-[9.5px] uppercase tracking-wider rounded-2xl transition-all shadow-xs flex items-center justify-center gap-1.5"
+            >
+              <Sparkles size={12} className="text-amber-300 shrink-0" />
+              <span>Load Demo Data</span>
+            </button>
+            <button
+              onClick={() => {
+                clearComplaints();
+                triggerDemoMessage("Cleared all reports! Starting fresh.");
+              }}
+              className="flex-1 py-2.5 px-3 bg-white hover:bg-slate-50 active:scale-95 text-slate-700 border border-slate-200 font-bold text-[9.5px] uppercase tracking-wider rounded-2xl transition-all shadow-2xs flex items-center justify-center gap-1.5"
+            >
+              <RefreshCw size={12} className="text-slate-500 shrink-0" />
+              <span>Start Fresh (Clear)</span>
+            </button>
+          </div>
+        </div>
+
         {/* Toast Notification for Demo Data Actions */}
         {demoLoadedMessage && (
           <div className="bg-teal-600 text-white px-4 py-2.5 rounded-2xl text-xs font-bold text-center shadow-lg border border-teal-400 animate-fade-in flex items-center justify-center gap-2">
@@ -260,40 +273,6 @@ export function Home() {
             <span>{demoLoadedMessage}</span>
           </div>
         )}
-
-        {/* Sandbox Mobile Test Panel */}
-        <div className="bg-slate-900/95 text-slate-100 rounded-3xl p-4 border border-slate-800 shadow-xl flex flex-col gap-2.5 shrink-0 select-none">
-          <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-              <span className="text-[10px] font-mono font-black uppercase tracking-wider text-cyan-400">Sandbox Mobile Test Panel</span>
-            </div>
-            <span className="text-[8px] font-mono font-black bg-slate-800 px-2 py-0.5 rounded text-slate-400">DEMO CONSOLE</span>
-          </div>
-          <p className="text-[9px] text-slate-400 font-bold leading-normal">
-            To test on your phone, you can start with a clean empty slate (default) and submit reports, or click below to load sample demo incidents:
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => {
-                seedSampleComplaints(center);
-                triggerDemoMessage("Demo incidents loaded successfully.");
-              }}
-              className="flex-1 py-2 bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all shadow-md shadow-cyan-950/40"
-            >
-              Load Demo Data
-            </button>
-            <button
-              onClick={() => {
-                clearComplaints();
-                triggerDemoMessage("All safety reports cleared.");
-              }}
-              className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 active:bg-slate-900 border border-slate-700 text-slate-300 font-black text-[9px] uppercase tracking-widest rounded-xl transition-all"
-            >
-              Clear All Reports
-            </button>
-          </div>
-        </div>
 
         {/* Start Walking Button */}
         <button 

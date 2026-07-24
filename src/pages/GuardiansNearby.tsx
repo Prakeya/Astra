@@ -5,14 +5,6 @@ import { useState, useEffect } from "react";
 import { subscribeToGuardians, toggleGuardianStatusService } from "@/lib/firebaseService";
 import { GuardianLocation } from "@/types/safety";
 
-const DEFAULT_GUARDIANS = [
-  { id: "1", name: "Ananya F.", distance: "80m", eta: "2 min", badge: "✓", level: "Verified", rating: 4.9, helps: 28, status: "active", available: "6PM-11PM" },
-  { id: "2", name: "Meera S.", distance: "120m", eta: "3 min", badge: "🛡️", level: "Police-Verified", rating: 5.0, helps: 34, status: "active", available: "Always" },
-  { id: "3", name: "Kavitha R.", distance: "200m", eta: "5 min", badge: "🏠", level: "Community", rating: 4.7, helps: 12, status: "active", available: "7PM-10PM" },
-  { id: "4", name: "Sunita M.", distance: "350m", eta: "8 min", badge: "✓", level: "Verified", rating: 4.8, helps: 19, status: "busy", available: "8PM-12AM" },
-  { id: "5", name: "Divya K.", distance: "400m", eta: "10 min", badge: "🏠", level: "Community", rating: 4.6, helps: 9, status: "active", available: "6PM-9PM" },
-];
-
 const BADGE_COLOR: Record<string, string> = {
   "Community": "#2563eb",
   "Verified": "#16a34a",
@@ -103,7 +95,7 @@ export function GuardiansNearby() {
             transition={{ duration: 1.8, repeat: Infinity }}/>
           <circle cx="190" cy="80" r="5" fill="#ef4444"/>
           {/* Guardian dots */}
-          {[{cx:145,cy:62},{cx:220,cy:95},{cx:170,cy:108},{cx:255,cy:72},{cx:130,cy:100}].map((g,i) => (
+          {filtered.length > 0 && [{cx:145,cy:62},{cx:220,cy:95},{cx:170,cy:108},{cx:255,cy:72},{cx:130,cy:100}].slice(0, filtered.length).map((g,i) => (
             <g key={i}>
               <motion.circle cx={g.cx} cy={g.cy} r="6" fill="#0d9488"
                 animate={{ r: [6,10,6], opacity: [0.6,0.2,0.6] }}

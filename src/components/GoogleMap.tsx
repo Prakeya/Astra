@@ -153,24 +153,71 @@ export function GoogleMap({
   }, [loaded, center, zoom, markers]);
 
   if (error) {
+    // Elegant, interactive vector tactical radar map fallback when Google Maps JS API script fails
+    const getXY = (pos: { lat: number; lng: number }) => {
+      const latSpan = 0.008;
+      const lngSpan = 0.008;
+      const x = 200 + ((pos.lng - center.lng) / lngSpan) * 160;
+      const y = 200 - ((pos.lat - center.lat) / latSpan) * 160;
+      return { x: Math.max(25, Math.min(375, x)), y: Math.max(25, Math.min(375, y)) };
+    };
+
     return (
-      <div 
-        className={className}
-        style={{ 
-          width: "100%", 
-          height: "100%",
-          minHeight: "400px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "#f1f5f9",
-          color: "#ef4444",
-          borderRadius: "12px",
-        }}
-      >
-        <div className="text-center">
-          <p className="text-lg font-semibold mb-2">🗺️ Map Error</p>
-          <p className="text-sm opacity-80">{error}</p>
+      <div className={`relative w-full h-full bg-[#0f172a] rounded-3xl overflow-hidden select-none ${className}`}>
+        {/* Cyberpunk Grid */}
+        <div className="absolute inset-0 opacity-15" style={{
+          backgroundImage: `linear-gradient(#38bdf8 1px, transparent 1px), linear-gradient(90deg, #38bdf8 1px, transparent 1px)`,
+          backgroundSize: '20px 20px',
+        }} />
+
+        <svg className="w-full h-full relative z-10" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice">
+          {/* Main Diagonal Highway */}
+          <line x1="20" y1="380" x2="380" y2="20" stroke="#1e293b" strokeWidth="16" strokeLinecap="round" />
+          <line x1="20" y1="380" x2="380" y2="20" stroke="#334155" strokeWidth="1" strokeDasharray="5,5" opacity="0.6" />
+
+          {/* Cross Streets */}
+          <line x1="20" y1="200" x2="380" y2="200" stroke="#1e293b" strokeWidth="12" strokeLinecap="round" />
+          <line x1="200" y1="20" x2="200" y2="380" stroke="#1e293b" strokeWidth="12" strokeLinecap="round" />
+
+          {/* Circular Safe Perimeter Bypass Road */}
+          <circle cx="200" cy="200" r="120" fill="none" stroke="#1e293b" strokeWidth="8" strokeDasharray="10,6" opacity="0.4" />
+
+          {/* Render markers */}
+          {markers.map((m, idx) => {
+            const { x, y } = getXY(m.position);
+            const isUser = m.color === "#06b6d4";
+            return (
+              <g key={idx}>
+                {/* Risk or safe glow aura */}
+                {!isUser && (
+                  <>
+                    <circle cx={x} cy={y} r="45" fill={m.color} fillOpacity="0.1" />
+                    <circle cx={x} cy={y} r="24" fill={m.color} fillOpacity="0.18" />
+                  </>
+                )}
+                {isUser && (
+                  <>
+                    <circle cx={x} cy={y} r="35" fill="#06b6d4" fillOpacity="0.15" />
+                    <circle cx={x} cy={y} r="18" fill="#06b6d4" fillOpacity="0.25" />
+                  </>
+                )}
+
+                {/* Marker Dot */}
+                <circle cx={x} cy={y} r={isUser ? 8 : 6} fill={m.color} stroke="#ffffff" strokeWidth={isUser ? 3 : 2} />
+
+                {/* Label */}
+                <text x={x} y={y - 12} fill="#ffffff" fontSize="8.5" fontWeight="900" textAnchor="middle" className="font-mono uppercase tracking-wider drop-shadow-md">
+                  {m.title}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+
+        {/* Tactical UI Overlay Badge */}
+        <div className="absolute bottom-3 left-3 z-20 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 text-emerald-400 px-2.5 py-1 rounded-xl text-[8.5px] font-mono font-black uppercase tracking-widest flex items-center gap-1.5 shadow-md">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span>Astra Tactical Radar</span>
         </div>
       </div>
     );

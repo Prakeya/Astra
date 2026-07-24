@@ -84,7 +84,22 @@ export function saveComplaints(complaints: Complaint[]) {
   window.dispatchEvent(new Event("astra_complaints_updated"));
 }
 
+export function clearDemoMode() {
+  try {
+    localStorage.removeItem("astra_demo_mode");
+    const current = getComplaints().filter(c => !c.id.startsWith("seed-"));
+    saveComplaints(current);
+  } catch (e) {
+    console.error("Error clearing demo mode", e);
+  }
+}
+
 export function clearComplaints() {
+  try {
+    localStorage.removeItem("astra_demo_mode");
+  } catch (e) {
+    console.error("Error clearing demo mode flag", e);
+  }
   saveComplaints([]);
 }
 
@@ -137,6 +152,11 @@ async function analyzeComplaintAsync(id: string, complaint: Complaint) {
 }
 
 export function seedSampleComplaints(baseCenter: { lat: number; lng: number }) {
+  try {
+    localStorage.setItem("astra_demo_mode", "true");
+  } catch (e) {
+    console.error("Error setting demo mode flag", e);
+  }
   const seeded: Complaint[] = SAMPLE_COMPLAINTS_SEED.map((sample, idx) => ({
     ...sample,
     id: `seed-${idx}-${Date.now()}`,
