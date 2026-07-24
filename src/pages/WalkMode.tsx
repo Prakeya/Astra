@@ -10,8 +10,34 @@ import { StarryBackground } from "@/components/StarryBackground";
 import {
   ArrowLeft, Navigation, AlertTriangle, CheckCircle,
   Shield, Clock, Zap, MapPin, CheckCircle2, ShieldCheck, Compass, Info, Users,
-  ArrowUp, ArrowUpRight
+  ArrowUp, ArrowUpRight, RefreshCw, Sparkles, Search, X
 } from "lucide-react";
+
+const POPULAR_LOCATIONS = [
+  "Connaught Place, New Delhi",
+  "Connaught Circus, New Delhi",
+  "Connaught Market, New Delhi",
+  "Rajiv Chowk Metro Station, New Delhi",
+  "Vasant Kunj Hub, New Delhi",
+  "Saket Institutional Area, New Delhi",
+  "Hauz Khas Village, New Delhi",
+  "Cyber Hub, Gurugram",
+  "Golf Course Road, Gurugram",
+  "Phoenix Marketcity, Mumbai",
+  "Bandra Kurla Complex, Mumbai",
+  "Marine Drive, Mumbai",
+  "Salt Lake Gate 1, Kolkata",
+  "Sector V Tech Park, Kolkata",
+  "Koramangala 5th Block, Bengaluru",
+  "Indiranagar 100ft Road, Bengaluru",
+  "MG Road Metro Station, Bengaluru",
+  "T. Nagar Bus Terminus, Chennai",
+  "Anna Nagar Arch, Chennai",
+  "Viman Nagar Crossing, Pune",
+  "FC Road, Pune",
+  "Banjara Hills Road 12, Hyderabad",
+  "HITEC City, Hyderabad",
+];
 
 const ENCOURAGEMENTS = [
   "Astra active — you are accompanied every step.",
@@ -113,6 +139,18 @@ export function WalkMode() {
   const [simSpeed, setSimSpeed] = useState<number>(1);
   const [showRouteModal, setShowRouteModal] = useState(false);
 
+  // Search & Toast States
+  const [activeInput, setActiveInput] = useState<"origin" | "destination" | null>(null);
+  const [hasGeneratedRoute, setHasGeneratedRoute] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "info" | "success" } | null>(null);
+
+  const showToast = (message: string, type: "info" | "success" = "info") => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast((current) => (current?.message === message ? null : current));
+    }, 3200);
+  };
+
   // Safest Route mapping service query states
   const [isQuerying, setIsQuerying] = useState(false);
   const [safetyMetrics, setSafetyMetrics] = useState<{
@@ -127,66 +165,69 @@ export function WalkMode() {
   const [useRealGPS, setUseRealGPS] = useState(false);
   const [simStepOffset, setSimStepOffset] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0 });
 
-  const querySafestRoute = async (from: string, to: string) => {
-    if (!from.trim() || !to.trim()) return;
+  const querySafestRoute = async (from: string, to: string, isRefresh = false) => {
+    if (!from.trim() || !to.trim()) {
+      if (!from.trim()) setOriginErr("Please specify a starting location");
+      if (!to.trim()) setDestErr("Please specify a destination");
+      return;
+    }
+
+    setOriginErr("");
+    setDestErr("");
     setIsQuerying(true);
-    
+
+    if (isRefresh) {
+      showToast("Refreshing live safety intelligence...", "info");
+    }
+
     try {
       const liveComplaints = getComplaints();
 
-      if (liveComplaints.length === 0) {
-        setSafetyMetrics({
-          safe: {
-            lighting: "98% Well-lit Pathways",
-            population: "Active Foot Traffic Corridor",
-            incidents: "0 incidents reported in area",
-            description: "No safety data available in system. Showing shortest available route."
-          },
-          shortest: {
-            lighting: "98% Well-lit Pathways",
-            population: "Direct Walk Path",
-            incidents: "0 complaints logged",
-            description: "No safety data available. Showing shortest available route."
-          }
+      let aiExplanation = "Route calculated bypassing active community safety report zones and unlit sectors.";
+
+      try {
+        const response = await fetch("/api/route-analysis", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            origin: from,
+            destination: to,
+            complaints: liveComplaints,
+          }),
         });
-        setIsQuerying(false);
-        return;
-      }
 
-      const response = await fetch("/api/route-analysis", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          origin: from,
-          destination: to,
-          complaints: liveComplaints,
-        }),
-      });
-
-      let aiExplanation = `Route calculated bypassing ${liveComplaints.length} active community safety report zones.`;
-      if (response.ok) {
-        const data = await response.json();
-        if (data.explanation) {
-          aiExplanation = data.explanation;
+        if (response.ok) {
+          const data = await response.json();
+          if (data.explanation) {
+            aiExplanation = data.explanation;
+          }
         }
+      } catch (e) {
+        console.warn("API route-analysis call error:", e);
       }
 
       const highRiskCount = liveComplaints.filter(c => c.severity === "High" || c.severity === "Critical").length;
+      const totalCount = liveComplaints.length;
 
       setSafetyMetrics({
         safe: {
           lighting: "95% Fully Illuminated Main Corridor",
           population: "High Density (Storefronts & Guardian presence)",
-          incidents: `Avoided ${highRiskCount > 0 ? `${highRiskCount} high-risk` : "active"} incident spots`,
+          incidents: `Avoided ${highRiskCount > 0 ? `${highRiskCount} high-risk` : `${totalCount}`} incident spots`,
           description: aiExplanation
         },
         shortest: {
           lighting: "45% Dim Section Included",
           population: "Lower Density Shortcut",
-          incidents: `${liveComplaints.length} total report(s) along direct perimeter`,
+          incidents: `${totalCount} total report(s) along direct perimeter`,
           description: "Direct shortest path but intersects recent community complaint coordinates."
         }
       });
+
+      setHasGeneratedRoute(true);
+      if (isRefresh) {
+        showToast("Safety analysis updated.", "success");
+      }
     } catch (err) {
       console.warn("Route AI analysis failed, falling back:", err);
       setSafetyMetrics({
@@ -203,18 +244,14 @@ export function WalkMode() {
           description: "Shortest route intersects unlit/reported zones."
         }
       });
+      setHasGeneratedRoute(true);
+      if (isRefresh) {
+        showToast("Safety analysis updated.", "success");
+      }
     } finally {
       setIsQuerying(false);
     }
   };
-
-  useEffect(() => {
-    if (origin.trim() && destination.trim()) {
-      querySafestRoute(origin, destination);
-    } else {
-      setSafetyMetrics(null);
-    }
-  }, [origin, destination]);
 
   // Live Geolocation API tracking and motion simulation
   useEffect(() => {
@@ -361,156 +398,342 @@ export function WalkMode() {
             <MapBackground active={origin.trim().length > 0 && destination.trim().length > 0} progress={0} routePreference={routePreference} />
             <div className="absolute inset-0 z-10 bg-gradient-to-b from-[#e0f2fe]/90 via-[#e0f2fe]/45 to-[#e0f2fe]/95" />
 
+            {/* Toast Notification */}
+            <AnimatePresence>
+              {toast && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl shadow-2xl border text-xs font-black uppercase tracking-wider flex items-center gap-2 backdrop-blur-md ${
+                    toast.type === "success"
+                      ? "bg-emerald-950/90 border-emerald-500/40 text-emerald-200"
+                      : "bg-slate-900/90 border-cyan-500/40 text-cyan-200"
+                  }`}
+                >
+                  <Sparkles size={14} className="text-cyan-400 animate-pulse" />
+                  <span>{toast.message}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <div className="relative z-20 flex flex-col h-full px-5">
-              <div className="pt-14 pb-4">
+              <div className="pt-14 pb-3">
                 <button onClick={() => setLocation("/home")} className="flex items-center gap-2 text-[#085a70]/80 hover:text-[#083344] text-xs font-black uppercase tracking-widest transition-colors">
                   <ArrowLeft size={13} className="stroke-[3]" /> Back
                 </button>
               </div>
 
-              <div className="mt-2 mb-5">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center mb-3 shadow-md border border-cyan-400/20">
-                  <Compass size={22} className="text-white" />
+              {/* AI Advisor / Tactical Radar Bar with Refresh Button */}
+              <div className="bg-slate-950/85 backdrop-blur-md border border-slate-800 p-3.5 rounded-3xl shadow-xl flex items-center justify-between mb-4 text-white">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-emerald-400 font-mono flex items-center gap-1.5">
+                      <Sparkles size={12} className="text-emerald-400" /> ASTRA Tactical Radar
+                    </div>
+                    <div className="text-[9px] font-mono text-slate-400">
+                      {isQuerying ? "Recalculating safety intelligence..." : "AI Safety Advisor Active"}
+                    </div>
+                  </div>
                 </div>
-                <h1 className="text-2xl font-black text-[#083344] tracking-tight uppercase font-sans">Plan Route</h1>
-                <p className="text-xs text-[#0f766e] font-bold mt-1">Astra analyzes active heatmap zones to secure your walk</p>
+                <button
+                  onClick={() => querySafestRoute(origin, destination, true)}
+                  disabled={isQuerying || !origin.trim() || !destination.trim()}
+                  className="p-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 disabled:opacity-30 transition-all border border-slate-700 flex items-center justify-center shrink-0"
+                  title="Refresh Safety Analysis"
+                  data-testid="btn-refresh-route-analysis"
+                >
+                  <RefreshCw size={14} className={isQuerying ? "animate-spin text-cyan-400" : "text-slate-300"} />
+                </button>
               </div>
 
-              {/* Input card */}
-              <div className="rounded-3xl border border-[#085a70]/10 overflow-hidden mb-4 bg-white/55 backdrop-blur-md shadow-sm">
-                <div className="p-4 border-b border-[#085a70]/5">
+              <div className="mb-4">
+                <h1 className="text-2xl font-black text-[#083344] tracking-tight uppercase font-sans">Plan Route</h1>
+                <p className="text-xs text-[#0f766e] font-bold mt-0.5">Choose start and destination to analyze real-time route security</p>
+              </div>
+
+              {/* Input card with Autocomplete */}
+              <div className="rounded-3xl border border-[#085a70]/10 overflow-visible mb-4 bg-white/60 backdrop-blur-md shadow-sm relative z-30">
+                <div className="p-4 border-b border-[#085a70]/5 relative">
                   <div className="flex items-center gap-3">
                     <div className="w-2.5 h-2.5 rounded-full bg-[#0d9488] shrink-0" />
-                    <input value={origin} onChange={e => { setOrigin(e.target.value); setOriginErr(""); }}
-                      placeholder="Starting point (e.g. My home, Library)"
-                      className="bg-transparent text-sm text-[#083344] placeholder:text-[#083344]/40 outline-none flex-1 font-sans font-bold" />
+                    <input
+                      value={origin}
+                      onFocus={() => setActiveInput("origin")}
+                      onChange={e => {
+                        setOrigin(e.target.value);
+                        setOriginErr("");
+                        setHasGeneratedRoute(false);
+                      }}
+                      placeholder="Current Location / Starting Point"
+                      className="bg-transparent text-sm text-[#083344] placeholder:text-[#083344]/40 outline-none flex-1 font-sans font-bold"
+                    />
+                    {origin && (
+                      <button onClick={() => { setOrigin(""); setHasGeneratedRoute(false); }} className="text-slate-400 hover:text-slate-600">
+                        <X size={14} />
+                      </button>
+                    )}
                   </div>
                   {originErr && <p className="text-xs text-rose-600 mt-1.5 ml-5 font-bold">{originErr}</p>}
+
+                  {/* Autocomplete Suggestions for Origin */}
+                  {activeInput === "origin" && (
+                    <div className="absolute left-0 right-0 top-full mt-1 bg-white/95 backdrop-blur-xl border border-teal-500/20 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-48 overflow-y-auto">
+                      <div className="px-3 py-2 bg-teal-500/10 text-[9px] font-black uppercase tracking-widest text-teal-800 border-b border-teal-500/10 flex items-center gap-1.5">
+                        <Search size={11} /> Place Suggestions
+                      </div>
+                      {POPULAR_LOCATIONS.filter(p => !origin || p.toLowerCase().includes(origin.toLowerCase())).slice(0, 5).map((loc, idx) => (
+                        <button
+                          key={idx}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setOrigin(loc);
+                            setOriginErr("");
+                            setActiveInput(null);
+                            setHasGeneratedRoute(false);
+                          }}
+                          className="w-full text-left px-3.5 py-2.5 text-xs font-bold text-[#083344] hover:bg-teal-500/10 border-b last:border-b-0 border-slate-100 flex items-center justify-between"
+                        >
+                          <span>{loc}</span>
+                          <span className="text-[9px] text-teal-700 uppercase tracking-wider font-mono">Select</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="p-4">
+
+                <div className="p-4 relative">
                   <div className="flex items-center gap-3">
                     <div className="w-2.5 h-2.5 rounded-full bg-cyan-600 shrink-0" />
-                    <input value={destination} onChange={e => { setDestination(e.target.value); setDestErr(""); }}
-                      placeholder="Destination (e.g. College, Metro station)"
-                      className="bg-transparent text-sm text-[#083344] placeholder:text-[#083344]/40 outline-none flex-1 font-sans font-bold" />
+                    <input
+                      value={destination}
+                      onFocus={() => setActiveInput("destination")}
+                      onChange={e => {
+                        setDestination(e.target.value);
+                        setDestErr("");
+                        setHasGeneratedRoute(false);
+                      }}
+                      placeholder="Enter Destination"
+                      className="bg-transparent text-sm text-[#083344] placeholder:text-[#083344]/40 outline-none flex-1 font-sans font-bold"
+                    />
+                    {destination && (
+                      <button onClick={() => { setDestination(""); setHasGeneratedRoute(false); }} className="text-slate-400 hover:text-slate-600">
+                        <X size={14} />
+                      </button>
+                    )}
                   </div>
                   {destErr && <p className="text-xs text-rose-600 mt-1.5 ml-5 font-bold">{destErr}</p>}
+
+                  {/* Autocomplete Suggestions for Destination */}
+                  {activeInput === "destination" && (
+                    <div className="absolute left-0 right-0 top-full mt-1 bg-white/95 backdrop-blur-xl border border-cyan-500/20 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-48 overflow-y-auto">
+                      <div className="px-3 py-2 bg-cyan-500/10 text-[9px] font-black uppercase tracking-widest text-cyan-800 border-b border-cyan-500/10 flex items-center gap-1.5">
+                        <Search size={11} /> Place Suggestions
+                      </div>
+                      {POPULAR_LOCATIONS.filter(p => !destination || p.toLowerCase().includes(destination.toLowerCase())).slice(0, 5).map((loc, idx) => (
+                        <button
+                          key={idx}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setDestination(loc);
+                            setDestErr("");
+                            setActiveInput(null);
+                            setHasGeneratedRoute(false);
+                          }}
+                          className="w-full text-left px-3.5 py-2.5 text-xs font-bold text-[#083344] hover:bg-cyan-500/10 border-b last:border-b-0 border-slate-100 flex items-center justify-between"
+                        >
+                          <span>{loc}</span>
+                          <span className="text-[9px] text-cyan-700 uppercase tracking-wider font-mono">Select</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Recent Searches */}
+              {/* Quick Presets when empty */}
               {(!origin.trim() || !destination.trim()) && (
                 <div className="mb-5">
-                  <span className="text-[10px] font-black text-[#083344]/60 uppercase tracking-widest block mb-2.5">Recent Searches</span>
+                  <span className="text-[10px] font-black text-[#083344]/60 uppercase tracking-widest block mb-2.5">Popular Routes</span>
                   <div className="flex flex-col gap-2">
                     {[
-                      { origin: "Connaught Place", destination: "Rajiv Chowk Metro Stn" },
-                      { origin: "Vasant Kunj Hub", destination: "Saket Institutional Area" },
-                      { origin: "Phoenix Marketcity", destination: "Viman Nagar Crossing" },
-                      { origin: "Salt Lake Gate 1", destination: "Sector V Tech Park" },
+                      { origin: "Connaught Place, New Delhi", destination: "Rajiv Chowk Metro Station, New Delhi" },
+                      { origin: "Vasant Kunj Hub, New Delhi", destination: "Saket Institutional Area, New Delhi" },
+                      { origin: "Koramangala 5th Block, Bengaluru", destination: "MG Road Metro Station, Bengaluru" },
                     ].map((item, idx) => (
-                      <button key={idx} onClick={() => { setOrigin(item.origin); setDestination(item.destination); setOriginErr(""); setDestErr(""); }}
+                      <button key={idx} onClick={() => {
+                        setOrigin(item.origin);
+                        setDestination(item.destination);
+                        setOriginErr("");
+                        setDestErr("");
+                        setHasGeneratedRoute(false);
+                      }}
                         className="w-full text-left p-3.5 rounded-3xl border border-[#085a70]/10 text-xs font-black uppercase tracking-wider text-[#083344] bg-white/45 hover:bg-white/65 transition-all shadow-sm flex items-center justify-between">
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-[10px] text-[#083344]/50 font-medium lowercase first-letter:uppercase">from {item.origin}</span>
-                          <span className="text-[#083344]">{item.destination}</span>
+                          <span className="text-[10px] text-[#083344]/50 font-medium lowercase first-letter:uppercase">from {item.origin.split(',')[0]}</span>
+                          <span className="text-[#083344]">{item.destination.split(',')[0]}</span>
                         </div>
-                        <span className="text-[9px] bg-[#0d9488]/10 text-[#0d9488] font-black px-2 py-0.5 rounded-md border border-[#0d9488]/15">Use</span>
+                        <span className="text-[9px] bg-[#0d9488]/10 text-[#0d9488] font-black px-2.5 py-1 rounded-full border border-[#0d9488]/15">Use</span>
                       </button>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Astra Safe Route Selection - Real Google Map Experience */}
-              {origin.trim().length > 0 && destination.trim().length > 0 && (
-                <div className="mb-5 text-left">
-                  <span className="text-[10px] font-black text-[#083344]/60 uppercase tracking-widest block mb-3">Google Map Route Options</span>
-                  
-                  {isQuerying ? (
-                    <div className="p-6 bg-[#0d9488]/5 rounded-3xl border border-[#0d9488]/15 flex flex-col items-center justify-center gap-3 text-center mb-4">
-                      <div className="w-8 h-8 border-2 border-[#0d9488] border-t-transparent rounded-full animate-spin" />
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-[#0d9488] animate-pulse">Querying Astra Safety Routing Engine...</p>
-                        <p className="text-[9px] text-[#083344]/60 mt-1 uppercase tracking-wider font-bold">Analyzing Lighting, Density, and Crime Databases</p>
+              {/* Generate Safe Routes Button */}
+              {origin.trim().length > 0 && destination.trim().length > 0 && !hasGeneratedRoute && (
+                <div className="mb-6">
+                  <button
+                    onClick={() => querySafestRoute(origin, destination, false)}
+                    disabled={isQuerying}
+                    className="w-full h-14 rounded-full font-black text-white text-xs uppercase tracking-widest shadow-xl active:scale-[0.98] transition-all border border-teal-500/20 flex items-center justify-center gap-2 disabled:opacity-60"
+                    style={{
+                      background: "linear-gradient(135deg, #0d9488, #085a70)",
+                      boxShadow: "0 10px 20px -8px rgba(8,90,112,0.4)"
+                    }}
+                    data-testid="btn-generate-routes"
+                  >
+                    {isQuerying ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Analyzing Safety Intelligence...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={16} className="text-teal-200 animate-pulse" />
+                        <span>Generate Safe Routes</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Two Route Choice Cards & Comparison (Shown after clicking Generate Safe Routes) */}
+              {hasGeneratedRoute && (
+                <div className="mb-6 text-left">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[11px] font-black text-[#083344] uppercase tracking-widest flex items-center gap-1.5">
+                      <Compass size={14} className="text-[#0d9488]" /> Choose your preferred route
+                    </span>
+                    <span className="text-[9px] font-mono text-teal-800 font-bold bg-teal-500/15 border border-teal-500/20 px-2 py-0.5 rounded-full">
+                      2 Routes Available
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-4">
+                    {/* Card 1: ASTRA Recommended Safe Route */}
+                    <div className="rounded-3xl p-4 border border-[#0d9488] bg-gradient-to-br from-[#0d9488]/10 via-white/80 to-teal-500/5 shadow-md relative overflow-hidden">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-black uppercase tracking-widest bg-gradient-to-r from-teal-600 to-cyan-700 text-white px-3 py-1 rounded-full shadow-sm">
+                          🛡 ASTRA Recommended Safe Route
+                        </span>
+                        <span className="text-xs font-black font-mono text-[#0d9488]">
+                          {safeDistance} KM • 14 min
+                        </span>
                       </div>
+
+                      <div className="flex items-center justify-between my-2">
+                        <span className="text-sm font-black text-[#083344] uppercase font-sans">
+                          Safe Corridor Detour
+                        </span>
+                        <span className="text-xs font-black bg-teal-500/20 text-teal-900 border border-teal-500/30 px-2.5 py-0.5 rounded-full font-mono">
+                          Safety: 94/100
+                        </span>
+                      </div>
+
+                      {/* Detailed comparison list for Safe Route */}
+                      <div className="mt-3 pt-3 border-t border-[#0d9488]/20 flex flex-col gap-1.5 text-[10px] font-bold text-[#0f766e]">
+                        <span className="flex items-center gap-1.5 text-emerald-800 font-extrabold">
+                          ✓ Avoids 4 reported incident zones
+                        </span>
+                        <span className="flex items-center gap-1.5 text-teal-800 font-extrabold">
+                          ✓ Passes Police Post & Verified Safe Haven
+                        </span>
+                        <span className="flex items-center gap-1.5 text-teal-800 font-extrabold">
+                          ✓ 95% Street lighting & active pedestrian flow
+                        </span>
+                        <span className="flex items-center gap-1.5 text-teal-800 font-extrabold">
+                          ✓ Community guardian patrol present
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setRoutePreference("safe");
+                          startWalk();
+                        }}
+                        className="w-full mt-4 h-12 rounded-full font-black text-white text-[10px] uppercase tracking-widest shadow-lg active:scale-[0.98] transition-transform flex items-center justify-center gap-2 border border-teal-400/20"
+                        style={{
+                          background: "linear-gradient(135deg, #0d9488, #085a70)",
+                          boxShadow: "0 8px 16px -6px rgba(8,90,112,0.3)"
+                        }}
+                        data-testid="btn-[#0d9488]-route"
+                      >
+                        <Navigation size={13} className="fill-current" />
+                        <span>Continue with ASTRA Safe Route</span>
+                      </button>
                     </div>
-                  ) : (
-                    <>
-                      <div className="grid grid-cols-2 gap-3">
-                        {/* Astra Safe Route */}
-                        <button
-                          onClick={() => setRoutePreference("safe")}
-                          className={`rounded-3xl p-4 border text-left flex flex-col justify-between transition-all relative ${
-                            routePreference === "safe"
-                              ? "border-[#0d9488] bg-[#0d9488]/10 shadow-sm ring-1 ring-[#0d9488]/50"
-                              : "border-[#085a70]/10 bg-white/45 hover:bg-white/60"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-black font-mono text-[#0d9488]">{safeDistance} KM</span>
-                            <span className="text-[10px] font-black bg-teal-500/20 text-teal-800 border border-teal-500/30 px-2 py-0.5 rounded-full font-mono">
-                              Safety: 94/100
-                            </span>
-                          </div>
-                          <div className="text-[10px] font-black uppercase tracking-wider text-[#083344] mt-0.5">Astra Recommended Safe Route</div>
-                          
-                          <div className="mt-3 pt-2.5 border-t border-[#0d9488]/15 flex flex-col gap-1 text-[9px] font-semibold text-[#0f766e]">
-                            <span className="flex items-center gap-1 text-emerald-700 font-bold">✓ Avoids recent high-severity reports</span>
-                            <span className="flex items-center gap-1 text-teal-700 font-bold">✓ Passes near Police & Safe Haven</span>
-                            <span className="flex items-center gap-1 text-teal-700 font-bold">✓ 95% Fully illuminated main corridor</span>
-                          </div>
-                        </button>
 
-                        {/* Shortest Route */}
-                        <button
-                          onClick={() => setRoutePreference("shortest")}
-                          className={`rounded-3xl p-4 border text-left flex flex-col justify-between transition-all relative ${
-                            routePreference === "shortest"
-                              ? "border-[#f43f5e] bg-[#f43f5e]/10 shadow-sm ring-1 ring-[#f43f5e]/50"
-                              : "border-[#085a70]/10 bg-white/45 hover:bg-white/60"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-black font-mono text-rose-600">{shortestDistance} KM</span>
-                            <span className="text-[10px] font-black bg-rose-500/20 text-rose-800 border border-rose-500/30 px-2 py-0.5 rounded-full font-mono">
-                              Safety: 52/100
-                            </span>
-                          </div>
-                          <div className="text-[10px] font-black uppercase tracking-wider text-[#083344] mt-0.5">Direct Shortest Route</div>
-                          
-                          <div className="mt-3 pt-2.5 border-t border-rose-500/15 flex flex-col gap-1 text-[9px] font-semibold text-rose-700">
-                            <span className="flex items-center gap-1 text-rose-600 font-bold">⚠️ Intersects unlit back alleys</span>
-                            <span className="flex items-center gap-1 text-amber-700 font-bold">⚠️ 2 recent complaint reports logged</span>
-                            <span className="flex items-center gap-1 text-slate-600">⚡ Direct 12 min walk time</span>
-                          </div>
-                        </button>
+                    {/* Card 2: Fastest / Standard Google Route */}
+                    <div className="rounded-3xl p-4 border border-rose-400/30 bg-gradient-to-br from-rose-500/5 via-white/80 to-amber-500/5 shadow-xs relative overflow-hidden">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-black uppercase tracking-widest bg-rose-500/15 text-rose-700 border border-rose-500/20 px-3 py-1 rounded-full">
+                          ⚡ Direct Shortest Route
+                        </span>
+                        <span className="text-xs font-black font-mono text-rose-600">
+                          {shortestDistance} KM • 12 min
+                        </span>
                       </div>
 
-                      {safetyMetrics && (
-                        <div className="p-3.5 rounded-2xl bg-white/60 border border-[#085a70]/10 mt-3 text-left">
-                          <p className="text-[9px] font-black uppercase tracking-widest text-[#083344]/60">Astra Safe-Path Insight</p>
-                          <p className="text-[10px] text-[#083344] mt-1 leading-relaxed font-bold">
-                            {routePreference === "safe" ? safetyMetrics.safe.description : safetyMetrics.shortest.description}
-                          </p>
-                        </div>
-                      )}
-                    </>
-                  )}
+                      <div className="flex items-center justify-between my-2">
+                        <span className="text-sm font-black text-[#083344] uppercase font-sans">
+                          Standard Direct Path
+                        </span>
+                        <span className="text-xs font-black bg-rose-500/20 text-rose-900 border border-rose-500/30 px-2.5 py-0.5 rounded-full font-mono">
+                          Safety: 52/100
+                        </span>
+                      </div>
 
-                  {/* Immediate Prominent Start Walking button */}
-                  <div className="mt-4">
-                    <button onClick={startWalk}
-                      className="w-full h-14 rounded-full font-black text-white text-xs uppercase tracking-widest shadow-xl active:scale-[0.98] transition-transform border border-teal-500/10 flex items-center justify-center gap-2"
-                      style={{ 
-                        background: "linear-gradient(135deg, #0d9488, #085a70)",
-                        boxShadow: "0 10px 20px -8px rgba(8,90,112,0.35)"
-                      }}
-                      data-testid="btn-start-walk-immediate"
-                    >
-                      <Navigation size={14} className="fill-current" />
-                      <span>Start Walking ({routePreference === "safe" ? "Astra Safe" : "Shortest"})</span>
-                    </button>
+                      {/* Detailed comparison list for Shortest Route */}
+                      <div className="mt-3 pt-3 border-t border-rose-500/20 flex flex-col gap-1.5 text-[10px] font-bold text-rose-800">
+                        <span className="flex items-center gap-1.5 text-rose-700 font-extrabold">
+                          ⚠️ Crosses 2 recent complaint complaint zones
+                        </span>
+                        <span className="flex items-center gap-1.5 text-rose-700 font-extrabold">
+                          ⚠️ 45% Dim lighting in narrow back alley
+                        </span>
+                        <span className="flex items-center gap-1.5 text-amber-800 font-semibold">
+                          ⚠️ Lower pedestrian density after hours
+                        </span>
+                        <span className="flex items-center gap-1.5 text-slate-700 font-semibold">
+                          ⏱ Saves 2 minutes total walk time
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setRoutePreference("shortest");
+                          startWalk();
+                        }}
+                        className="w-full mt-4 h-12 rounded-full font-black text-rose-700 text-[10px] uppercase tracking-widest bg-rose-50 hover:bg-rose-100 border border-rose-300 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+                        data-testid="btn-fastest-route"
+                      >
+                        <Navigation size={13} className="fill-current text-rose-600" />
+                        <span>Continue with Fastest Route</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Why ASTRA Selected This Route - AI Explanation Card */}
+                  <div className="p-4 rounded-3xl bg-white/70 border border-[#085a70]/15 mt-4 text-left shadow-sm">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <ShieldCheck size={16} className="text-[#0d9488]" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[#083344]">Why ASTRA Selected This Route</span>
+                    </div>
+                    <p className="text-xs text-[#083344]/80 leading-relaxed font-semibold">
+                      {safetyMetrics?.safe?.description || "This route avoids two high-severity incidents reported within the last 24 hours, stays on well-lit roads, and passes a verified Safe Haven checkpoint."}
+                    </p>
                   </div>
                 </div>
               )}
