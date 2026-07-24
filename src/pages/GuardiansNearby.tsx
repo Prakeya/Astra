@@ -41,22 +41,19 @@ export function GuardiansNearby() {
     await toggleGuardianStatusService(next, 11.127, 78.657, 2.5);
   };
 
-  // Combine static and live guardians
-  const combinedGuardians = [
-    ...liveGuardians.map((g) => ({
-      id: g.uid,
-      name: g.displayName || "Community Guardian",
-      distance: "110m",
-      eta: "3 min",
-      badge: "🛡️",
-      level: "Police-Verified",
-      rating: g.trustRating || 4.9,
-      helps: 15,
-      status: g.available ? "active" : "offline",
-      available: "Live Active"
-    })),
-    ...DEFAULT_GUARDIANS
-  ];
+  // Live guardians from Firestore / active state
+  const combinedGuardians = liveGuardians.map((g) => ({
+    id: g.uid,
+    name: g.displayName || "Community Guardian",
+    distance: "110m",
+    eta: "3 min",
+    badge: "🛡️",
+    level: "Police-Verified",
+    rating: g.trustRating || 4.9,
+    helps: 15,
+    status: g.available ? "active" : "offline",
+    available: "Live Active"
+  }));
 
   const filtered = filter === "All" ? combinedGuardians : combinedGuardians.filter(g => g.level === filter);
 
@@ -135,7 +132,16 @@ export function GuardiansNearby() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 mt-4 pb-24 flex flex-col gap-3">
-        {filtered.map((g, i) => (
+        {filtered.length === 0 ? (
+          <div className="text-center py-12 px-4 bg-white rounded-3xl border border-slate-200 shadow-xs">
+            <Shield size={36} className="text-teal-600 mx-auto mb-3 animate-pulse" />
+            <p className="text-xs font-black uppercase tracking-wider text-[#083344]">Waiting for nearby guardians...</p>
+            <p className="text-[11px] text-slate-500 font-semibold mt-1">
+              No active community guardians found in range. Click "Become Guardian" to activate patrol mode.
+            </p>
+          </div>
+        ) : (
+          filtered.map((g, i) => (
           <motion.div
             key={g.id}
             initial={{ opacity: 0, y: 10 }}
@@ -176,7 +182,8 @@ export function GuardiansNearby() {
               <div className={`w-2.5 h-2.5 rounded-full mt-2 shrink-0 ${g.status === "active" ? "bg-emerald-500" : "bg-slate-300"}`}/>
             </div>
           </motion.div>
-        ))}
+        ))
+        )}
       </div>
     </div>
   );

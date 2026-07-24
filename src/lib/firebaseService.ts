@@ -531,29 +531,6 @@ export function subscribeToGuardians(onUpdate: (guardians: GuardianLocation[]) =
     }
   }
 
-  // Fallback demo guardians around center
-  const demoGuardians: GuardianLocation[] = [
-    {
-      uid: "g-1",
-      displayName: "Patrol Unit Alpha",
-      lat: 11.128,
-      lng: 78.658,
-      available: true,
-      radiusKm: 3.0,
-      lastUpdated: "Just now",
-      trustRating: 4.9
-    },
-    {
-      uid: "g-2",
-      displayName: "Safe Haven Station 4",
-      lat: 11.126,
-      lng: 78.655,
-      available: true,
-      radiusKm: 2.0,
-      lastUpdated: "2m ago",
-      trustRating: 5.0
-    }
-  ];
-  onUpdate(demoGuardians);
+  onUpdate([]);
   return () => {};
 }

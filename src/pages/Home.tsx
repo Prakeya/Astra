@@ -5,7 +5,8 @@ import { Shield, MapPin, Users, Bell, Navigation, RefreshCw, EyeOff, AlertTriang
 import { StarryBackground } from "@/components/StarryBackground";
 import { getMapCenterFromUser } from "@/lib/indiaStates";
 import { getComplaints, seedSampleComplaints, clearComplaints, calculateSafetyScore, type Complaint } from "@/lib/safetyStore";
-import { subscribeToComplaints } from "@/lib/firebaseService";
+import { subscribeToComplaints, subscribeToGuardians } from "@/lib/firebaseService";
+import { GuardianLocation } from "@/types/safety";
 import { AISafetyAssistantDrawer } from "@/components/AISafetyAssistantDrawer";
 
 interface Marker {
@@ -19,6 +20,7 @@ export function Home() {
   const [center, setCenter] = useState({ lat: 11.1271, lng: 78.6569 }); // Default Tamil Nadu
   const [mapExpanded, setMapExpanded] = useState(false);
   const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [liveGuardians, setLiveGuardians] = useState<GuardianLocation[]>([]);
   const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
   const [demoLoadedMessage, setDemoLoadedMessage] = useState<string | null>(null);
 
@@ -47,7 +49,13 @@ export function Home() {
     const unsubscribe = subscribeToComplaints((data) => {
       setComplaints(data);
     });
-    return () => unsubscribe();
+    const unsubGuardians = subscribeToGuardians((data) => {
+      setLiveGuardians(data);
+    });
+    return () => {
+      unsubscribe();
+      unsubGuardians();
+    };
   }, []);
 
   const getSeverityColor = (severity: string) => {
@@ -91,7 +99,9 @@ export function Home() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
               </span>
-              <span className="text-[11px] text-[#0f766e] font-extrabold uppercase tracking-wider">2 Active Guardians nearby</span>
+              <span className="text-[11px] text-[#0f766e] font-extrabold uppercase tracking-wider">
+                {liveGuardians.length > 0 ? `${liveGuardians.length} Active Guardian${liveGuardians.length > 1 ? 's' : ''} nearby` : "No active guardians nearby"}
+              </span>
             </div>
           </div>
           

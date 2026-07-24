@@ -1,12 +1,22 @@
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { guardians } from "@/lib/mockData";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { subscribeToGuardians } from "@/lib/firebaseService";
+import { GuardianLocation } from "@/types/safety";
+import { Shield } from "lucide-react";
 
 export function SafeNow() {
   const [rated, setRated] = useState(false);
   const [shared, setShared] = useState(false);
+  const [liveGuardians, setLiveGuardians] = useState<GuardianLocation[]>([]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToGuardians((data) => {
+      setLiveGuardians(data);
+    });
+    return () => unsubscribe();
+  }, []);
 
   return (
     <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 relative overflow-hidden text-center bg-[#e0f2fe] text-[#083344]">
@@ -41,17 +51,27 @@ export function SafeNow() {
         {/* Guardian cards */}
         <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.6 }}
           className="rounded-[2rem] mb-8 overflow-hidden border border-[#085a70]/10 bg-white/55 backdrop-blur-md shadow-sm">
-          {guardians.map((g, i) => (
-            <motion.div key={g.id}
-              initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.6 + i * 0.12 }}
-              className={`flex items-center gap-3 px-5 py-4 ${i < guardians.length - 1 ? "border-b border-[#085a70]/5" : ""}`}>
-              <span className="text-xl">🙏</span>
-              <span className="text-[#083344] font-black text-xs uppercase tracking-wider flex-1 text-left">{g.name}</span>
-              <span className="text-[10px] font-black uppercase tracking-wider text-[#0d9488] bg-[#0d9488]/10 px-2.5 py-0.5 rounded-full border border-[#0d9488]/15">
-                {g.status === "arriving" ? `arrived in ${g.eta}` : g.status === "police" ? "called police" : "stayed on line"}
-              </span>
-            </motion.div>
-          ))}
+          {liveGuardians.length === 0 ? (
+            <div className="p-5 text-center">
+              <Shield size={24} className="text-[#0d9488] mx-auto mb-2 animate-pulse" />
+              <div className="text-xs font-black uppercase tracking-wider text-[#083344]">No guardian responses yet</div>
+              <div className="text-[10px] font-medium text-slate-500 mt-1">
+                Waiting for nearby guardians...
+              </div>
+            </div>
+          ) : (
+            liveGuardians.map((g, i) => (
+              <motion.div key={g.uid}
+                initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.6 + i * 0.12 }}
+                className={`flex items-center gap-3 px-5 py-4 ${i < liveGuardians.length - 1 ? "border-b border-[#085a70]/5" : ""}`}>
+                <span className="text-xl">🙏</span>
+                <span className="text-[#083344] font-black text-xs uppercase tracking-wider flex-1 text-left">{g.displayName || "Community Guardian"}</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#0d9488] bg-[#0d9488]/10 px-2.5 py-0.5 rounded-full border border-[#0d9488]/15">
+                  Arrived / Monitoring
+                </span>
+              </motion.div>
+            ))
+          )}
         </motion.div>
 
         {/* Actions */}

@@ -1,6 +1,8 @@
 import { useRef, useEffect, useState, useMemo } from "react";
 import { GoogleMap, useJsApiLoader, MarkerF, CircleF, PolylineF } from "@react-google-maps/api";
 import { getMapCenterFromUser, getZoomLevel } from "@/lib/indiaStates";
+import { subscribeToGuardians } from "@/lib/firebaseService";
+import { GuardianLocation } from "@/types/safety";
 
 const containerStyle: React.CSSProperties = {
   position: "absolute",
@@ -34,6 +36,14 @@ export function MapBackground({
   const [userCenter, setUserCenter] = useState<google.maps.LatLngLiteral | null>(null);
   const [userState, setUserState] = useState("");
   const [blink, setBlink] = useState(true);
+  const [liveGuardians, setLiveGuardians] = useState<GuardianLocation[]>([]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToGuardians((data) => {
+      setLiveGuardians(data);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const center = useMemo(() => userCenter || getMapCenterFromUser(), [userCenter]);
   const zoom = useMemo(() => {
@@ -412,14 +422,12 @@ export function MapBackground({
         }}
       />
 
-      {/* Guardian markers (mock) */}
-      {[
-        { pos: { lat: center.lat + 0.0018, lng: center.lng - 0.0008 }, label: "Ananya" },
-        { pos: { lat: center.lat - 0.001, lng: center.lng + 0.0012 }, label: "Meera" },
-      ].map((g, i) => (
+      {/* Live Guardian markers */}
+      {liveGuardians.map((g) => (
         <MarkerF
-          key={i}
-          position={g.pos}
+          key={g.uid}
+          position={{ lat: g.lat, lng: g.lng }}
+          title={g.displayName || "Community Guardian"}
           icon={{
             path: google.maps.SymbolPath.CIRCLE,
             scale: 5,

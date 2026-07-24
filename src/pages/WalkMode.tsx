@@ -5,7 +5,8 @@ import { MapBackground } from "@/components/MapBackground";
 import { SOSButton } from "@/components/SOSButton";
 import { ZONES, LEVEL_COLOR, type Zone } from "@/lib/safetyData";
 import { getComplaints, type Complaint } from "@/lib/safetyStore";
-import { subscribeToComplaints } from "@/lib/firebaseService";
+import { subscribeToComplaints, subscribeToGuardians } from "@/lib/firebaseService";
+import { GuardianLocation } from "@/types/safety";
 import { StarryBackground } from "@/components/StarryBackground";
 import {
   ArrowLeft, Navigation, AlertTriangle, CheckCircle,
@@ -142,7 +143,15 @@ export function WalkMode() {
   // Search & Toast States
   const [activeInput, setActiveInput] = useState<"origin" | "destination" | null>(null);
   const [hasGeneratedRoute, setHasGeneratedRoute] = useState(false);
+  const [liveGuardians, setLiveGuardians] = useState<GuardianLocation[]>([]);
   const [toast, setToast] = useState<{ message: string; type: "info" | "success" } | null>(null);
+
+  useEffect(() => {
+    const unsub = subscribeToGuardians((data) => {
+      setLiveGuardians(data);
+    });
+    return () => unsub();
+  }, []);
 
   const showToast = (message: string, type: "info" | "success" = "info") => {
     setToast({ message, type });
@@ -1030,7 +1039,7 @@ export function WalkMode() {
                 {[
                   { icon: <Clock size={12} className="text-[#0d9488]" />, val: fmt(elapsed), label: "elapsed" },
                   { icon: <Zap size={12} className="text-[#0d9488]" />, val: `${etaMins}m`, label: "ETA" },
-                  { icon: <Shield size={12} className="text-[#0d9488]" />, val: "2", label: "guardians" },
+                  { icon: <Shield size={12} className="text-[#0d9488]" />, val: `${liveGuardians.length}`, label: "guardians" },
                 ].map(s => (
                   <div key={s.label} className="flex-1 rounded-3xl px-3.5 py-3 border border-[#085a70]/10 bg-white/55 backdrop-blur-md shadow-sm">
                     <div className="flex items-center gap-1.5 mb-1">
@@ -1143,7 +1152,7 @@ export function WalkMode() {
               {[
                 { label: "Distance Covered", val: `${distCovered.toFixed(2)} KM` },
                 { label: "Transit Duration", val: fmt(elapsed) },
-                { label: "Active Guardians", val: "2" },
+                { label: "Active Guardians", val: `${liveGuardians.length}` },
                 { label: "Heatmaps Traversed", val: `${routeZones.length} (${routeDanger.length} avoided)` },
               ].map(r => (
                 <div key={r.label} className="flex justify-between px-5 py-3">
