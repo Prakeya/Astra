@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { ArrowLeft, Shield, TrendingUp, Trophy, Clock, MapPin, Play, AlertTriangle } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { getComplaints, calculateSafetyScore, type Complaint } from "@/lib/safetyStore";
+import { subscribeToComplaints } from "@/lib/firebaseService";
 
 const TABS = ["Score", "Stats", "Leaderboard", "Timeline"];
 
@@ -12,10 +13,10 @@ export function Dashboard() {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
 
   useEffect(() => {
-    setComplaints(getComplaints());
-    const handleUpdate = () => setComplaints(getComplaints());
-    window.addEventListener("astra_complaints_updated", handleUpdate);
-    return () => window.removeEventListener("astra_complaints_updated", handleUpdate);
+    const unsubscribe = subscribeToComplaints((data) => {
+      setComplaints(data);
+    });
+    return () => unsubscribe();
   }, []);
 
   const scoreResult = useMemo(() => calculateSafetyScore(complaints), [complaints]);

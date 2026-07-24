@@ -1,8 +1,9 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
-import { ArrowLeft, X, MapPin, Clock, AlertTriangle, Shield, Camera } from "lucide-react";
+import { ArrowLeft, X, MapPin, Clock, AlertTriangle, Shield, Camera, CheckCircle2 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { getComplaints, type Complaint } from "@/lib/safetyStore";
+import { verifyIncidentService, subscribeToComplaints } from "@/lib/firebaseService";
 
 const FILTERS = [
   { key: "all", label: "All" },
@@ -30,10 +31,10 @@ export function IncidentMap() {
   const [selected, setSelected] = useState<any | null>(null);
 
   useEffect(() => {
-    setComplaints(getComplaints());
-    const handleUpdate = () => setComplaints(getComplaints());
-    window.addEventListener("astra_complaints_updated", handleUpdate);
-    return () => window.removeEventListener("astra_complaints_updated", handleUpdate);
+    const unsubscribe = subscribeToComplaints((data) => {
+      setComplaints(data);
+    });
+    return () => unsubscribe();
   }, []);
 
   const getSvgCoords = (id: string) => {
@@ -298,8 +299,77 @@ export function IncidentMap() {
                   </div>
                 )}
 
+                {/* Trust-Based Incident Verification Section */}
+                <div className="mb-4 bg-teal-50/60 border border-teal-500/20 rounded-2xl p-3.5">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#085a70] flex items-center gap-1.5">
+                      <Shield size={13} className="text-[#0d9488]" />
+                      Trust-Based Verification
+                    </span>
+                    <span className={`text-[9px] px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider ${
+                      selected.verificationStatus === "verified" || (selected.trustScore && selected.trustScore >= 65)
+                        ? "bg-emerald-500/20 text-emerald-800 border border-emerald-500/30"
+                        : selected.verificationStatus === "rejected"
+                        ? "bg-rose-500/20 text-rose-800 border border-rose-500/30"
+                        : "bg-amber-500/20 text-amber-800 border border-amber-500/30"
+                    }`}>
+                      {selected.verificationStatus === "verified" || (selected.trustScore && selected.trustScore >= 65)
+                        ? "Verified Report ✓"
+                        : selected.verificationStatus === "rejected"
+                        ? "Unverified / Flagged"
+                        : "Pending Verification"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex-1 bg-slate-200 h-2 rounded-full overflow-hidden">
+                      <div
+                        className="bg-[#0d9488] h-full transition-all duration-300"
+                        style={{ width: `${selected.trustScore || 50}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-mono font-black text-[#083344]">
+                      {selected.trustScore || 50}% Trust Score
+                    </span>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={async () => {
+                        const res = await verifyIncidentService(selected.id, "confirm");
+                        setSelected({
+                          ...selected,
+                          trustScore: res.newTrustScore,
+                          verificationStatus: res.status,
+                          confirmationsCount: (selected.confirmationsCount || 0) + 1
+                        });
+                      }}
+                      className="flex-1 py-2 bg-[#0d9488] hover:bg-[#0f766e] text-white rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1 shadow-xs transition-all"
+                    >
+                      <CheckCircle2 size={13} />
+                      <span>Confirm Incident</span>
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const res = await verifyIncidentService(selected.id, "false_alarm");
+                        setSelected({
+                          ...selected,
+                          trustScore: res.newTrustScore,
+                          verificationStatus: res.status,
+                          falseReportsCount: (selected.falseReportsCount || 0) + 1
+                        });
+                      }}
+                      className="flex-1 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1 transition-all"
+                    >
+                      <AlertTriangle size={13} />
+                      <span>Report False Alarm</span>
+                    </button>
+                  </div>
+                </div>
+
                 {/* Description */}
                 <div className="mb-4">
+
                   <h4 className="text-[10px] font-black text-[#085a70]/60 uppercase tracking-widest mb-2">Description</h4>
                   <p className="text-xs text-[#083344] leading-relaxed font-semibold">{selected.description}</p>
                 </div>

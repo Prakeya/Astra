@@ -5,6 +5,7 @@ import { Shield, MapPin, Users, Bell, Navigation, RefreshCw, EyeOff, AlertTriang
 import { StarryBackground } from "@/components/StarryBackground";
 import { getMapCenterFromUser } from "@/lib/indiaStates";
 import { getComplaints, seedSampleComplaints, clearComplaints, calculateSafetyScore, type Complaint } from "@/lib/safetyStore";
+import { subscribeToComplaints } from "@/lib/firebaseService";
 import { AISafetyAssistantDrawer } from "@/components/AISafetyAssistantDrawer";
 
 interface Marker {
@@ -43,13 +44,10 @@ export function Home() {
   }, []);
 
   useEffect(() => {
-    setComplaints(getComplaints());
-
-    const handleUpdate = () => {
-      setComplaints(getComplaints());
-    };
-    window.addEventListener("astra_complaints_updated", handleUpdate);
-    return () => window.removeEventListener("astra_complaints_updated", handleUpdate);
+    const unsubscribe = subscribeToComplaints((data) => {
+      setComplaints(data);
+    });
+    return () => unsubscribe();
   }, []);
 
   const getSeverityColor = (severity: string) => {

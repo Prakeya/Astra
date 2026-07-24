@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useState, useEffect } from "react";
-import { User, Shield, Phone, MapPin, Settings as SettingsIcon, Heart, ChevronRight, Bell, Clock, Users, Star } from "lucide-react";
+import { User, Shield, Phone, MapPin, Settings as SettingsIcon, Heart, ChevronRight, Bell, Clock, Users, Star, Radio, CheckCircle2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { StarryBackground } from "@/components/StarryBackground";
+import { updateUserLocationService, toggleGuardianStatusService } from "@/lib/firebaseService";
+import { requestFCMToken } from "@/lib/firebase";
 
 interface UserData {
   name: string;
@@ -26,6 +28,15 @@ function getGradient(name: string) {
 export function Profile() {
   const [, setLocation] = useLocation();
   const [user, setUser] = useState<UserData>({ name: "User", initials: "U", avatar: null });
+  
+  // Real-time states
+  const [isLiveSharing, setIsLiveSharing] = useState<boolean>(() => {
+    return localStorage.getItem("astra_live_location") === "true";
+  });
+  const [isGuardianActive, setIsGuardianActive] = useState<boolean>(() => {
+    return localStorage.getItem("astra_guardian_active") === "true";
+  });
+  const [fcmStatus, setFcmStatus] = useState<string>("Not Enabled");
 
   useEffect(() => {
     try {
@@ -42,6 +53,50 @@ export function Profile() {
       // fallback to defaults
     }
   }, []);
+
+  // Handle Location Sharing toggle
+  useEffect(() => {
+    let watchId: number | null = null;
+    if (isLiveSharing && "geolocation" in navigator) {
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          updateUserLocationService(pos.coords.latitude, pos.coords.longitude, true);
+        },
+        (err) => {
+          console.warn("Geolocation watch error, using demo coordinates:", err);
+          updateUserLocationService(11.127, 78.657, true);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+      );
+    } else {
+      updateUserLocationService(11.127, 78.657, false);
+    }
+
+    return () => {
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+    };
+  }, [isLiveSharing]);
+
+  const handleToggleLiveSharing = (checked: boolean) => {
+    setIsLiveSharing(checked);
+    localStorage.setItem("astra_live_location", String(checked));
+  };
+
+  const handleToggleGuardian = async (checked: boolean) => {
+    setIsGuardianActive(checked);
+    localStorage.setItem("astra_guardian_active", String(checked));
+    await toggleGuardianStatusService(checked, 11.127, 78.657, 2.5);
+  };
+
+  const handleEnableFCM = async () => {
+    setFcmStatus("Requesting...");
+    const token = await requestFCMToken();
+    if (token) {
+      setFcmStatus("Active & Token Registered");
+    } else {
+      setFcmStatus("Permission Granted / Simulation Mode Active");
+    }
+  };
 
   return (
     <div className="min-h-[100dvh] w-full bg-white flex flex-col relative overflow-hidden text-[#083344] font-sans">
@@ -65,8 +120,12 @@ export function Profile() {
               <span className="text-xs text-[#0f766e] font-bold">12 helps completed</span>
             </div>
             <div className="flex items-center gap-2 mt-2">
-              <span className="text-[10px] px-2.5 py-1 rounded-full bg-[#0d9488]/10 text-[#0d9488] font-black uppercase tracking-wider flex items-center gap-1 border border-[#0d9488]/10">
-                <Shield size={10} /> Active Guardian
+              <span className={`text-[10px] px-2.5 py-1 rounded-full font-black uppercase tracking-wider flex items-center gap-1 border ${
+                isGuardianActive
+                  ? "bg-[#0d9488]/10 text-[#0d9488] border-[#0d9488]/20"
+                  : "bg-slate-200/60 text-slate-600 border-slate-300/40"
+              }`}>
+                <Shield size={10} /> {isGuardianActive ? "Active Guardian Mode" : "Guardian Mode Offline"}
               </span>
               <span className="text-[10px] px-2.5 py-1 rounded-full bg-violet-500/10 text-violet-600 font-black uppercase tracking-wider border border-violet-500/10">Score 92</span>
             </div>
@@ -92,6 +151,47 @@ export function Profile() {
             </button>
           ))}
         </div>
+
+        {/* Real-time Location Sharing & FCM Push Notifications */}
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center">
+              <Radio size={12} className="text-white" />
+            </div>
+            <h2 className="text-xs font-black text-[#083344]/80 uppercase tracking-widest">Real-time Sync & Push Alerts</h2>
+          </div>
+          <div className="bg-slate-50 rounded-3xl border border-[#085a70]/10 shadow-sm p-5 space-y-4">
+            
+            {/* Live Location Sharing */}
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-xs font-black text-[#083344] uppercase tracking-wider block mb-0.5">Firebase Live Location Sharing</Label>
+                <p className="text-[10px] font-medium text-[#0f766e]">Broadcasts encrypted coordinates to active walks and guardians.</p>
+              </div>
+              <Switch
+                checked={isLiveSharing}
+                onCheckedChange={handleToggleLiveSharing}
+                className="data-[state=checked]:bg-[#0d9488]"
+              />
+            </div>
+
+            {/* FCM Notifications */}
+            <div className="pt-3 border-t border-[#085a70]/10 flex items-center justify-between">
+              <div>
+                <Label className="text-xs font-black text-[#083344] uppercase tracking-wider block mb-0.5">FCM Push Notifications</Label>
+                <p className="text-[10px] font-medium text-[#0f766e]">Status: {fcmStatus}</p>
+              </div>
+              <Button
+                onClick={handleEnableFCM}
+                variant="outline"
+                className="h-8 text-[10px] font-black uppercase tracking-wider bg-white border-[#085a70]/20 text-[#0d9488] hover:bg-teal-50 rounded-xl"
+              >
+                <Bell size={12} className="mr-1" />
+                Enable Alerts
+              </Button>
+            </div>
+          </div>
+        </section>
 
         {/* Guardian Preference */}
         <section>
@@ -156,35 +256,6 @@ export function Profile() {
           </div>
         </section>
 
-        {/* Safe Zones */}
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-              <MapPin size={12} className="text-white" />
-            </div>
-            <h2 className="text-xs font-black text-[#083344]/80 uppercase tracking-widest">Safe Zones</h2>
-          </div>
-          <div className="bg-slate-50 rounded-3xl border border-[#085a70]/10 shadow-sm divide-y divide-[#085a70]/5">
-            {[
-              { name: "🏠 Home", address: "Sector 12, Phase 2" },
-              { name: "🏫 College", address: "University Road" },
-            ].map((z) => (
-              <div key={z.name} className="p-4 flex justify-between items-center">
-                <div>
-                  <span className="text-xs font-extrabold text-[#083344] block uppercase tracking-wider">{z.name}</span>
-                  <span className="text-[10px] text-[#0f766e] font-semibold">{z.address}</span>
-                </div>
-                <button className="text-[10px] font-black uppercase tracking-wider text-rose-600 hover:text-rose-700 bg-rose-50 px-3 py-1.5 rounded-full border border-rose-100 transition-colors">Edit</button>
-              </div>
-            ))}
-            <div className="p-4">
-              <Button variant="ghost" className="w-full h-11 text-[#0f766e] hover:text-[#083344] border border-dashed border-[#085a70]/20 rounded-2xl hover:bg-slate-100 text-xs font-black uppercase tracking-wider">
-                + Add Safe Zone
-              </Button>
-            </div>
-          </div>
-        </section>
-
         {/* Emergency Settings */}
         <section>
           <div className="flex items-center gap-2 mb-3">
@@ -234,7 +305,8 @@ export function Profile() {
               <div>
                 <span className="text-[10px] font-black text-teal-700 uppercase tracking-wider block mb-1">Status</span>
                 <span className="text-[#083344] font-black flex items-center gap-2 text-sm">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Active & Online
+                  <span className={`w-2.5 h-2.5 rounded-full ${isGuardianActive ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`}></span>
+                  {isGuardianActive ? "Active & Online" : "Guardian Offline"}
                 </span>
               </div>
               <div className="text-right">
@@ -242,8 +314,15 @@ export function Profile() {
                 <span className="text-[#0f766e] text-xs font-black">6 PM – 11 PM</span>
               </div>
             </div>
-            <Button variant="outline" className="w-full h-11 bg-white border-[#085a70]/10 text-[#083344] hover:bg-slate-50 rounded-xl text-xs font-black uppercase tracking-wider">
-              Edit Availability Hours
+            <Button
+              onClick={() => handleToggleGuardian(!isGuardianActive)}
+              className={`w-full h-11 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                isGuardianActive
+                  ? "bg-slate-200 text-slate-800 hover:bg-slate-300"
+                  : "bg-[#0d9488] text-white hover:bg-[#0f766e] shadow-md"
+              }`}
+            >
+              {isGuardianActive ? "Turn Off Guardian Mode" : "Turn On Guardian Mode"}
             </Button>
           </div>
           

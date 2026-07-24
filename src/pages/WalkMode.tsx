@@ -5,6 +5,7 @@ import { MapBackground } from "@/components/MapBackground";
 import { SOSButton } from "@/components/SOSButton";
 import { ZONES, LEVEL_COLOR, type Zone } from "@/lib/safetyData";
 import { getComplaints, type Complaint } from "@/lib/safetyStore";
+import { subscribeToComplaints } from "@/lib/firebaseService";
 import { StarryBackground } from "@/components/StarryBackground";
 import {
   ArrowLeft, Navigation, AlertTriangle, CheckCircle,

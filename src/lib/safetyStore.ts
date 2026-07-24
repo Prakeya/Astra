@@ -1,83 +1,24 @@
-export interface AIAnalysis {
-  category: string;
-  severity: "Low" | "Medium" | "High" | "Critical";
-  threatLevel: "Low" | "Medium" | "High" | "Critical";
-  confidenceScore?: number;
-  extractedLocation?: string;
-  extractedTime?: string;
-  riskIndicators?: string[];
-  suggestedSafetyAdvice?: string;
-  recommendedAction: string;
-  reasoning?: string;
-  safetyImpactScore: number;
-  summary: string;
-}
+import { Complaint, AIAnalysis, DynamicHeatmapZone, SafetyScoreResult, HotspotDetail } from "../types/safety";
+import { createComplaintService } from "./firebaseService";
 
-export interface Complaint {
-  id: string;
-  type: string;
-  label: string;
-  severity: "Low" | "Medium" | "High" | "Critical";
-  description: string;
-  anonymous: boolean;
-  timestamp: string;
-  lat: number;
-  lng: number;
-  locationName: string;
-  imageUrl?: string;
-  status: "Reported" | "Analyzed by AI" | "Under Review" | "Guardian Alerted" | "Resolved";
-  aiAnalysis?: AIAnalysis;
-  count: number;
-  isSos?: boolean;
-}
-
-export interface DynamicHeatmapZone {
-  id: string;
-  label: string;
-  level: "safe" | "caution" | "danger";
-  cx: number;
-  cy: number;
-  rx: number;
-  ry: number;
-  incidents: number;
-  desc: string;
-  tip: string;
-  centerLat: number;
-  centerLng: number;
-}
-
-export interface SafetyScoreResult {
-  score: number;
-  label: string;
-  status: "optimal" | "moderate" | "caution" | "critical";
-  explanations: string[];
-  stats: {
-    totalComplaints: number;
-    highRiskCount: number;
-    mediumRiskCount: number;
-    lowRiskCount: number;
-    nighttimeCount: number;
-    mostCommonCategory: string;
-    highestRiskLocation: string;
-    safestLocation: string;
-    peakRiskHour: string;
-  };
-}
-
-export interface HotspotDetail {
-  id: string;
-  areaName: string;
-  safetyScore: number;
-  complaintCount: number;
-  mostCommonIncident: string;
-  averageSeverity: "Low" | "Medium" | "High" | "Critical";
-  mostRecentComplaint: string;
-  recommendedPrecautions: string;
-  riskIndicators: string[];
-  nearbyFacilities: { name: string; distance: string; type: string }[];
-}
+export type {
+  Complaint,
+  AIAnalysis,
+  DynamicHeatmapZone,
+  SafetyScoreResult,
+  HotspotDetail,
+  SeverityLevel,
+  VerificationStatus,
+  EscalationState,
+  UserProfile,
+  GuardianLocation,
+  EmergencyAlert,
+  IncidentVerification,
+  UserLiveLocation
+} from "../types/safety";
 
 // Sample complaint blueprints for explicit user seeding (DEMO ONLY)
+
 export const SAMPLE_COMPLAINTS_SEED: Omit<Complaint, "id" | "timestamp" | "count" | "status">[] = [
   {
     type: "harassment",
@@ -159,26 +100,7 @@ export async function addComplaint(complaintData: {
   imageUrl?: string;
   isSos?: boolean;
 }): Promise<Complaint> {
-  const current = getComplaints();
-  const id = `report-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-  const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-  const newComplaint: Complaint = {
-    ...complaintData,
-    id,
-    timestamp: nowStr,
-    status: "Reported",
-    count: 1
-  };
-
-  // Save immediately
-  const updated = [newComplaint, ...current];
-  saveComplaints(updated);
-
-  // Trigger AI Analysis asynchronously
-  analyzeComplaintAsync(id, newComplaint);
-
-  return newComplaint;
+  return createComplaintService(complaintData);
 }
 
 // Asynchronously analyzes complaint with Gemini backend

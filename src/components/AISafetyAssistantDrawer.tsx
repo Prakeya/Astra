@@ -160,16 +160,16 @@ export function AISafetyAssistantDrawer({ isOpen, onClose, initialPrompt }: Prop
           {/* Quick Suggestions */}
           <div className="p-2.5 bg-slate-950/40 border-t border-cyan-500/10 flex gap-1.5 overflow-x-auto no-scrollbar shrink-0">
             <button
+              onClick={() => handleSend("Who is responding to active emergencies?")}
+              className="text-[10px] bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/20 text-cyan-200 px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 transition-all font-semibold"
+            >
+              🛡️ Who is responding?
+            </button>
+            <button
               onClick={() => handleSend("Why is this area dangerous?")}
               className="text-[10px] bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/20 text-cyan-200 px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 transition-all font-semibold"
             >
               ⚠️ Why is this area dangerous?
-            </button>
-            <button
-              onClick={() => handleSend("Why did my safety score decrease?")}
-              className="text-[10px] bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/20 text-cyan-200 px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 transition-all font-semibold"
-            >
-              📉 Why did safety score decrease?
             </button>
             <button
               onClick={() => handleSend("Which route is safest right now?")}

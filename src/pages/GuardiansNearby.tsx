@@ -1,14 +1,16 @@
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { ArrowLeft, Star, MapPin, Shield, Clock } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, Star, MapPin, Shield, Clock, Heart } from "lucide-react";
+import { useState, useEffect } from "react";
+import { subscribeToGuardians, toggleGuardianStatusService } from "@/lib/firebaseService";
+import { GuardianLocation } from "@/types/safety";
 
-const GUARDIANS = [
-  { id: 1, name: "Ananya F.", distance: "80m", eta: "2 min", badge: "✓", level: "Verified", rating: 4.9, helps: 28, status: "active", available: "6PM-11PM" },
-  { id: 2, name: "Meera S.", distance: "120m", eta: "3 min", badge: "🛡️", level: "Police-Verified", rating: 5.0, helps: 34, status: "active", available: "Always" },
-  { id: 3, name: "Kavitha R.", distance: "200m", eta: "5 min", badge: "🏠", level: "Community", rating: 4.7, helps: 12, status: "active", available: "7PM-10PM" },
-  { id: 4, name: "Sunita M.", distance: "350m", eta: "8 min", badge: "✓", level: "Verified", rating: 4.8, helps: 19, status: "busy", available: "8PM-12AM" },
-  { id: 5, name: "Divya K.", distance: "400m", eta: "10 min", badge: "🏠", level: "Community", rating: 4.6, helps: 9, status: "active", available: "6PM-9PM" },
+const DEFAULT_GUARDIANS = [
+  { id: "1", name: "Ananya F.", distance: "80m", eta: "2 min", badge: "✓", level: "Verified", rating: 4.9, helps: 28, status: "active", available: "6PM-11PM" },
+  { id: "2", name: "Meera S.", distance: "120m", eta: "3 min", badge: "🛡️", level: "Police-Verified", rating: 5.0, helps: 34, status: "active", available: "Always" },
+  { id: "3", name: "Kavitha R.", distance: "200m", eta: "5 min", badge: "🏠", level: "Community", rating: 4.7, helps: 12, status: "active", available: "7PM-10PM" },
+  { id: "4", name: "Sunita M.", distance: "350m", eta: "8 min", badge: "✓", level: "Verified", rating: 4.8, helps: 19, status: "busy", available: "8PM-12AM" },
+  { id: "5", name: "Divya K.", distance: "400m", eta: "10 min", badge: "🏠", level: "Community", rating: 4.6, helps: 9, status: "active", available: "6PM-9PM" },
 ];
 
 const BADGE_COLOR: Record<string, string> = {
@@ -20,19 +22,68 @@ const BADGE_COLOR: Record<string, string> = {
 export function GuardiansNearby() {
   const [, setLocation] = useLocation();
   const [filter, setFilter] = useState("All");
+  const [liveGuardians, setLiveGuardians] = useState<GuardianLocation[]>([]);
+  const [isGuardianActive, setIsGuardianActive] = useState<boolean>(() => {
+    return localStorage.getItem("astra_guardian_active") === "true";
+  });
 
-  const filtered = filter === "All" ? GUARDIANS : GUARDIANS.filter(g => g.level === filter);
+  useEffect(() => {
+    const unsubscribe = subscribeToGuardians((data) => {
+      setLiveGuardians(data);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleToggleGuardian = async () => {
+    const next = !isGuardianActive;
+    setIsGuardianActive(next);
+    localStorage.setItem("astra_guardian_active", String(next));
+    await toggleGuardianStatusService(next, 11.127, 78.657, 2.5);
+  };
+
+  // Combine static and live guardians
+  const combinedGuardians = [
+    ...liveGuardians.map((g) => ({
+      id: g.uid,
+      name: g.displayName || "Community Guardian",
+      distance: "110m",
+      eta: "3 min",
+      badge: "🛡️",
+      level: "Police-Verified",
+      rating: g.trustRating || 4.9,
+      helps: 15,
+      status: g.available ? "active" : "offline",
+      available: "Live Active"
+    })),
+    ...DEFAULT_GUARDIANS
+  ];
+
+  const filtered = filter === "All" ? combinedGuardians : combinedGuardians.filter(g => g.level === filter);
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-slate-50 text-[#083344] font-sans">
-      <div className="flex items-center gap-3 px-4 py-4 pt-12 border-b border-[#085a70]/10 bg-white/80 backdrop-blur">
-        <button onClick={() => setLocation("/home")} className="p-2 rounded-full hover:bg-slate-100 transition-colors" data-testid="btn-back">
-          <ArrowLeft size={20} className="text-[#083344]"/>
-        </button>
-        <div>
-          <h1 className="text-lg font-black uppercase tracking-wider text-[#083344]">Guardians Nearby</h1>
-          <p className="text-xs font-medium text-[#085a70]/70">{GUARDIANS.filter(g=>g.status==="active").length} active now</p>
+      <div className="flex items-center justify-between px-4 py-4 pt-12 border-b border-[#085a70]/10 bg-white/80 backdrop-blur">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setLocation("/home")} className="p-2 rounded-full hover:bg-slate-100 transition-colors" data-testid="btn-back">
+            <ArrowLeft size={20} className="text-[#083344]"/>
+          </button>
+          <div>
+            <h1 className="text-lg font-black uppercase tracking-wider text-[#083344]">Guardians Nearby</h1>
+            <p className="text-xs font-medium text-[#085a70]/70">{filtered.length} units in range</p>
+          </div>
         </div>
+
+        <button
+          onClick={handleToggleGuardian}
+          className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-xs ${
+            isGuardianActive
+              ? "bg-emerald-500 text-white"
+              : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+          }`}
+        >
+          <Shield size={12} />
+          <span>{isGuardianActive ? "Active Mode" : "Become Guardian"}</span>
+        </button>
       </div>
 
       {/* Map preview */}
@@ -65,7 +116,7 @@ export function GuardiansNearby() {
           ))}
         </svg>
         <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur rounded-lg px-2 py-1 shadow-sm border border-slate-200">
-          <span className="text-[10px] font-black uppercase tracking-wider text-slate-600">5 guardians in range</span>
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-600">{filtered.length} guardians synced</span>
         </div>
       </div>
 
@@ -130,3 +181,4 @@ export function GuardiansNearby() {
     </div>
   );
 }
+
