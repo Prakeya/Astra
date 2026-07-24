@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { MapBackground } from "@/components/MapBackground";
 import { SOSButton } from "@/components/SOSButton";
 import { ZONES, LEVEL_COLOR, type Zone } from "@/lib/safetyData";
-import { getComplaints, type Complaint } from "@/lib/safetyStore";
+import { getComplaints, computeHeatmapZones, type Complaint } from "@/lib/safetyStore";
 import { subscribeToComplaints, subscribeToGuardians } from "@/lib/firebaseService";
 import { GuardianLocation } from "@/types/safety";
 import { StarryBackground } from "@/components/StarryBackground";
@@ -143,14 +143,21 @@ export function WalkMode() {
   // Search & Toast States
   const [activeInput, setActiveInput] = useState<"origin" | "destination" | null>(null);
   const [hasGeneratedRoute, setHasGeneratedRoute] = useState(false);
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [liveGuardians, setLiveGuardians] = useState<GuardianLocation[]>([]);
   const [toast, setToast] = useState<{ message: string; type: "info" | "success" } | null>(null);
 
   useEffect(() => {
-    const unsub = subscribeToGuardians((data) => {
+    const unsubC = subscribeToComplaints((data) => {
+      setComplaints(data);
+    });
+    const unsubG = subscribeToGuardians((data) => {
       setLiveGuardians(data);
     });
-    return () => unsub();
+    return () => {
+      unsubC();
+      unsubG();
+    };
   }, []);
 
   const showToast = (message: string, type: "info" | "success" = "info") => {
@@ -190,9 +197,11 @@ export function WalkMode() {
     }
 
     try {
-      const liveComplaints = getComplaints();
+      const liveComplaints = complaints;
 
-      let aiExplanation = "Route calculated bypassing active community safety report zones and unlit sectors.";
+      let aiExplanation = liveComplaints.length === 0
+        ? "No active risk incidents reported along this route. Main public corridors clear."
+        : "Route calculated bypassing active community safety report zones and unlit sectors.";
 
       try {
         const response = await fetch("/api/route-analysis", {
@@ -220,16 +229,16 @@ export function WalkMode() {
 
       setSafetyMetrics({
         safe: {
-          lighting: "95% Fully Illuminated Main Corridor",
+          lighting: "100% Fully Illuminated Main Corridor",
           population: "High Density (Storefronts & Guardian presence)",
-          incidents: `Avoided ${highRiskCount > 0 ? `${highRiskCount} high-risk` : `${totalCount}`} incident spots`,
+          incidents: totalCount === 0 ? "0 incidents reported in sector" : `Avoided ${highRiskCount > 0 ? `${highRiskCount} high-risk` : `${totalCount}`} incident spots`,
           description: aiExplanation
         },
         shortest: {
-          lighting: "45% Dim Section Included",
-          population: "Lower Density Shortcut",
-          incidents: `${totalCount} total report(s) along direct perimeter`,
-          description: "Direct shortest path but intersects recent community complaint coordinates."
+          lighting: "Standard Corridor Lighting",
+          population: "Direct Pedestrian Pathway",
+          incidents: totalCount === 0 ? "0 incidents reported in sector" : `${totalCount} total report(s) along direct perimeter`,
+          description: "Direct shortest path along main transit path."
         }
       });
 
@@ -317,10 +326,10 @@ export function WalkMode() {
   };
 
   const routeZones = useMemo(() => {
-    const rawZones = getRouteZones(destination);
+    if (!destination || complaints.length === 0) return [];
+    const computed = computeHeatmapZones(complaints);
     if (routePreference === "safe") {
-      // Simulate bypassing danger sectors by converting approach zones to secure patrolled pathways
-      return rawZones.map(z => z.level === "danger" ? { 
+      return computed.map(z => z.level === "danger" ? { 
         ...z, 
         level: "safe" as const, 
         label: z.label + " Bypass", 
@@ -328,8 +337,8 @@ export function WalkMode() {
         incidents: 0 
       } : z);
     }
-    return rawZones;
-  }, [destination, routePreference]);
+    return computed;
+  }, [destination, complaints, routePreference]);
   const walkAlerts = useMemo(() => getWalkAlerts(routeZones), [routeZones]);
   const routeDanger = routeZones.filter(z => z.level === "danger");
   const routeCaution = routeZones.filter(z => z.level === "caution");
@@ -1284,7 +1293,7 @@ export function WalkMode() {
                   Astra community members have reported multiple dimly lit or inactive street lamps along your upcoming sector.
                 </p>
                 <p className="text-xs text-[#0f766e] mb-4 bg-teal-500/5 p-2.5 rounded-2xl border border-teal-500/10 font-bold">
-                  Advice: Keep your screen brightness normal or switch to a bypass. Active guardian Ananya is patrolled near the crossing.
+                  Advice: Keep your screen brightness normal or switch to a bypass. Active community guardians monitored in area.
                 </p>
                 <div className="flex gap-2">
                   <button onClick={() => { setShowDimLightsPopup(false); setRerouted(true); }}

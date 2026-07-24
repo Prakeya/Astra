@@ -76,10 +76,8 @@ export function subscribeToComplaints(onUpdate: (complaints: Complaint[]) => voi
             });
           });
 
-          // Also keep local storage in sync so offline components work
-          if (complaints.length > 0) {
-            saveLocalComplaints(complaints);
-          }
+          // Always keep local storage in sync with Firestore state
+          saveLocalComplaints(complaints);
           onUpdate(complaints);
         },
         (error) => {

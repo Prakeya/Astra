@@ -29,6 +29,20 @@ export function Home() {
     setTimeout(() => setDemoLoadedMessage(null), 3000);
   };
 
+  const handleRefresh = () => {
+    const unsubC = subscribeToComplaints((data) => {
+      setComplaints(data);
+    });
+    const unsubG = subscribeToGuardians((data) => {
+      setLiveGuardians(data);
+    });
+    triggerDemoMessage("Refreshed live safety data from Firestore.");
+    setTimeout(() => {
+      unsubC();
+      unsubG();
+    }, 1000);
+  };
+
   useEffect(() => {
     // Determine center
     const defaultCenter = getMapCenterFromUser();
@@ -115,7 +129,7 @@ export function Home() {
             </button>
 
             <button
-              onClick={() => setComplaints(getComplaints())}
+              onClick={handleRefresh}
               className="bg-white/60 hover:bg-white/80 text-[#085a70] p-2.5 rounded-2xl border border-[#085a70]/10 shadow-xs transition-all flex items-center justify-center"
             >
               <RefreshCw size={14} />

@@ -378,7 +378,7 @@ export function IncidentMap() {
                 <div className="flex gap-3 mb-5">
                   {[
                     { icon:<AlertTriangle size={13}/>, label:"Reports", val: selected.count.toString() },
-                    { icon:<Shield size={13}/>, label:"Guardians alerted", val:"3" },
+                    { icon:<Shield size={13}/>, label:"Guardians alerted", val: selected.aiAnalysis?.assignedGuardianName ? "1" : "0" },
                     { icon:<Clock size={13}/>, label:"Reported", val:selected.time },
                   ].map(s => (
                     <div key={s.label} className="flex-1 rounded-2xl p-2.5 border border-[#085a70]/10 text-center bg-slate-50/50">
