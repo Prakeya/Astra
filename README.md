@@ -86,24 +86,11 @@ VITE_FIREBASE_VAPID_KEY=your_vapid_key
 npm install
 npm run dev
 ```
-The application runs at `http://localhost:3000`.
 
 ### Production Build
 ```bash
 npm run build
 npm start
-```
-
-## Project Structure
-
-```
-src/
-  components/       Shared UI components (map, SOS button, AI assistant drawer, panels)
-  components/ui/    shadcn/ui component library
-  pages/            Route-level views (Walk Mode, SOS, Check-In Timer, Guardian Onboarding, etc.)
-  lib/               Firebase service layer, safety scoring engine, and local data store
-  types/             Shared TypeScript types for complaints, guardians, and safety data
-server.ts            Express server and Gemini API proxy endpoints
 ```
 
 ## Mission
