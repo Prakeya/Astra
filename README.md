@@ -1,157 +1,77 @@
-# ASTRA — AI-Powered Women's Personal Safety & Dynamic Navigation Platform
+# Astra: AI-Powered Personal Safety Platform for Women
 
-**ASTRA** is a production-grade, AI-powered women’s personal safety platform designed to provide real-time threat intelligence, dynamic safe route recommendations, community guardian matching, and automated emergency escalation.
+Astra is a full-stack personal safety application that combines real-time navigation, AI-driven incident classification, and a community guardian network to help women move through public spaces more safely. The platform pairs a React and TypeScript frontend with an Express backend and Google Gemini for structured threat analysis, backed by Firebase for real-time data synchronization.
 
-By combining Google Gemini AI threat classification with Firebase real-time data sync, ASTRA transforms community safety reports into actionable, hyper-local risk intelligence.
+## Overview
 
----
+Astra addresses three core problems in personal safety technology: incident data that is scattered and unverified, routing that ignores real-world risk, and emergency response that depends on a single point of failure (typically one phone call). The platform solves this by continuously classifying community-reported incidents with AI, factoring that data into route recommendations, and coordinating a distributed network of community guardians who can respond in real time.
 
-## 🌟 Key Features
+## Core Features
 
-### 1. 🤖 Gemini AI Threat Analysis & Classification
-- **Structured Risk Intelligence**: Evaluates incident type, location, severity (`Low`, `Medium`, `High`, `Critical`), threat level, AI confidence score, extracted timeframe, key risk indicators, and recommended safety advice.
-- **Automated Severity Assessment**: Dynamically determines perimeter safety impact score reductions.
-- **AI Safety Assistant**: Instant natural language Q&A regarding live safety conditions and emergency guidance.
+**Live Walk Mode**
+A guided navigation mode that tracks the user's route in real time, factoring in nearby reported incidents. Users can search destinations from a curated list of common locations across major Indian cities or enter a custom address, and the system recalculates safer paths as new incidents are logged.
 
-### 2. 🗺️ Dynamic Safe Route Recommendation Engine
-- **Multi-Factor Scoring**: Calculates optimal walking routes based on complaint density, incident severity, recency, trust scores, verified badges, and nearby emergency facilities.
-- **Human-Readable Explanations**: Generates clear natural language explanations detailing which hazards (e.g. unlit lanes, reported stalking spots) were bypassed.
-- **Dynamic Detour Routing**: Automatically updates recommended routes when new complaints or emergency alerts are logged.
+**Voice-Activated Emergency Trigger**
+A hands-free safety mechanism built on the Web Audio API that listens for configurable trigger phrases (for example, "Astra help" or "Astra SOS") and initiates an emergency response without requiring the user to touch their device. Sensitivity is user-adjustable, and the feature includes a built-in test mode.
 
-### 3. 🛡️ Community Guardian Network & Matching
-- **Guardian Mode**: Community members can publish availability, live coordinates, and coverage radius (`guardians` collection).
-- **Automated Escalation & Dispatch**: When high/critical incidents or SOS alerts occur, nearby active guardians receive automated dispatch notifications with estimated arrival time and route.
+**Distraction Call Simulation**
+A simulated incoming phone call feature with pre-written, contact-specific conversation scripts, designed to give users a natural-looking reason to alter their route or deter a potential threat in an uncomfortable situation.
 
-### 4. ⚡ Real-Time Emergency Response & Escalation
-- **Automated Threat Escalation**: High/Critical severity incidents automatically trigger emergency alert records in the `emergencies` collection.
-- **Live Emergency Banners**: Persistent real-time notification alerts across active views when an emergency escalation is active.
+**Check-In Timer**
+A configurable safety timer that prompts the user for periodic check-ins during a walk. Missed check-ins trigger a grace period followed by an automated alert, giving trusted contacts visibility into the user's status without constant manual updates.
 
-### 5. 👥 Trust-Based Incident Verification
-- **Community Audit Trail**: Members can "Confirm Incident" or "Report False Alarm" to dynamically adjust complaint trust scores.
-- **Verified Badging**: Incidents exceeding trust thresholds earn a visual "Verified Report ✓" badge and higher weight in route calculations.
+**AI-Powered Incident Classification**
+User-submitted incident reports are sent to Google Gemini, which returns structured output including severity, threat level, confidence score, extracted location and time, key risk indicators, and recommended safety actions. The backend includes a graceful fallback response when no API key is configured, so the application remains functional in development or demo environments.
 
-### 6. 📊 Real-Time Safety Intelligence Dashboard
-- **Dynamic Safety Perimeter Score**: Computed strictly from actual complaint data (100-point scale with "WHY" factor explanations).
-- **Hotspot Heatmap Intelligence**: Spatial cluster analysis detailing nearby police helpdesks, ER facilities, and safe havens.
-- **Real-Time Pipeline Timeline**: Transparent audit trail showing complaint submission, Gemini classification, score recalculation, and route updates.
+**AI Safety Assistant**
+A conversational assistant, grounded in the live complaint database, that answers natural-language questions about safety conditions in a given area and provides situational guidance.
 
----
+**AI-Explained Safe Routing**
+When incidents are present along a route, the backend calls Gemini to generate a short, human-readable explanation of why a particular path was chosen over the shortest route, citing the specific hazards it avoids.
 
-## 🏗️ Architecture & Data Flow
+**Community Guardian Network**
+A verified guardian system with a structured onboarding flow that includes government ID upload, address proof, video verification, and a probationary period before guardians can go active. Verified guardians can toggle their availability and are matched to nearby emergency alerts in real time through Firebase.
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    ASTRA Client UI                      │
-│     (React 19 + TypeScript + Vite + Tailwind CSS)       │
-└───────────┬─────────────────────────────────┬───────────┘
-            │                                 │
-            ▼                                 ▼
-┌─────────────────────────┐       ┌─────────────────────────┐
-│    Gemini AI Engine     │       │  Firebase Modular SDK   │
-│  (server.ts Proxy API)  │       │  (Firestore + Auth)     │
-└───────────┬─────────────┘       └───────────┬─────────────┘
-            │                                 │
-            ▼                                 ▼
- ┌───────────────────────┐       ┌─────────────────────────┐
- │   gemini-3.6-flash    │       │  Firestore Collections  │
- │ Structured Extraction │       │ • complaints            │
- └───────────────────────┘       │ • users                 │
-                                 │ • guardians             │
-                                 │ • emergencies           │
-                                 │ • verifications        │
-                                 └─────────────────────────┘
-```
+**Trust-Based Incident Verification**
+Community members can confirm or dispute reported incidents, which adjusts a trust score attached to each report and determines whether it receives a verified badge and greater weight in safety calculations.
 
----
+**Real-Time Safety Dashboard**
+A dynamic safety score, computed from live incident data, along with a heatmap of nearby risk zones, a community impact dashboard, and an auditable timeline of report submission, AI classification, and score updates.
 
-## 🗄️ Firestore Collections & Data Model
+**SOS and Emergency Escalation**
+A dedicated SOS flow that immediately escalates high and critical severity incidents, creating emergency alert records and notifying nearby active guardians with real-time location sharing.
 
-### 1. `complaints`
-```json
-{
-  "id": "report-1710000000000",
-  "type": "harassment",
-  "label": "Harassment Reported",
-  "severity": "High",
-  "description": "Pedestrians followed near underpass.",
-  "anonymous": true,
-  "timestamp": "08:30 PM",
-  "lat": 11.128,
-  "lng": 78.658,
-  "locationName": "Station Road Underpass",
-  "status": "Guardian Alerted",
-  "reporterId": "user_123",
-  "trustScore": 85,
-  "confirmationsCount": 3,
-  "falseReportsCount": 0,
-  "verificationStatus": "verified",
-  "escalationState": "escalated",
-  "isEmergency": true,
-  "geminiConfidence": 0.94,
-  "aiAnalysis": {
-    "category": "Harassment",
-    "severity": "High",
-    "threatLevel": "High",
-    "confidenceScore": 0.94,
-    "riskIndicators": ["Poor Lighting", "Low Pedestrian Density"],
-    "suggestedSafetyAdvice": "Travel via illuminated main road.",
-    "recommendedAction": "Use well-lit detour along main roads.",
-    "reasoning": "High threat assessment based on report density.",
-    "safetyImpactScore": 20,
-    "summary": "Stalking risk identified in underpass corridor."
-  }
-}
-```
+## Technical Architecture
 
-### 2. `guardians`
-```json
-{
-  "uid": "guardian_456",
-  "displayName": "Patrol Unit Alpha",
-  "lat": 11.128,
-  "lng": 78.658,
-  "available": true,
-  "radiusKm": 3.0,
-  "trustRating": 4.9,
-  "lastUpdated": "2026-07-23T09:30:00Z"
-}
-```
+**Frontend**
+Built with React 19 and TypeScript, using Vite for the build tooling and Tailwind CSS for styling. The UI layer is composed with shadcn/ui components on top of Radix UI primitives, with Framer Motion for animation, TanStack Query for data fetching and caching, React Hook Form with Zod for form validation, and wouter for lightweight client-side routing.
 
-### 3. `emergencies`
-```json
-{
-  "id": "emerg-report-1710000000000",
-  "complaintId": "report-1710000000000",
-  "severity": "High",
-  "locationName": "Station Road Underpass",
-  "lat": 11.128,
-  "lng": 78.658,
-  "timestamp": "2026-07-23T09:30:00Z",
-  "status": "escalated",
-  "notifiedGuardiansCount": 3,
-  "summary": "Pedestrians followed near underpass."
-}
-```
+**Backend**
+An Express server (running on Node.js with TypeScript via tsx) exposes REST endpoints that proxy requests to the Google Gemini API, handling incident analysis, conversational assistance, and route explanation. In development, the Express server runs Vite in middleware mode; in production, it serves the built static assets directly.
 
----
+**Data Layer**
+Firebase Firestore provides real-time synchronization across five core collections: complaints, users, guardians, emergencies, and verifications. The frontend subscribes directly to Firestore for live updates on incidents, guardian availability, emergency alerts, and shared user locations, so changes propagate to all connected clients without manual polling.
 
-## 🚀 Environment Setup & Local Execution
+**AI Integration**
+Google Gemini (accessed through the @google/genai SDK) is used with structured JSON schema responses for incident classification, ensuring consistent, typed output that the frontend can render without additional parsing logic.
 
-### 1. Prerequisites
-- Node.js 20+
-- npm / pnpm / bun
+**Mapping**
+Google Maps JavaScript API, integrated through @react-google-maps/api, powers live location tracking, route rendering, and the incident heatmap.
 
-### 2. Environment Variables Configuration (`.env`)
-Copy `.env.example` to `.env`:
+## Environment Setup
+
+### Prerequisites
+- Node.js 20 or later
+- npm, pnpm, or bun
+
+### Configuration
+Copy `.env.example` to `.env` and provide the following:
 
 ```env
-# Gemini API Key
 GEMINI_API_KEY=your_gemini_api_key_here
-
-# Google Maps API Key
 VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 
-# Firebase Modular SDK Configuration (Optional - falls back gracefully to local engine)
+# Firebase configuration (optional; the app falls back to a local data engine if omitted)
 VITE_FIREBASE_API_KEY=your_firebase_api_key
 VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
@@ -161,19 +81,31 @@ VITE_FIREBASE_APP_ID=your_app_id
 VITE_FIREBASE_VAPID_KEY=your_vapid_key
 ```
 
-### 3. Run Development Server
+### Running Locally
 ```bash
+npm install
 npm run dev
 ```
-The server will start on `http://localhost:3000`.
+The application runs at `http://localhost:3000`.
 
-### 4. Build for Production
+### Production Build
 ```bash
 npm run build
 npm start
 ```
 
----
+## Project Structure
 
-## 🛡️ License & Mission
-Built to ensure safe mobility for women worldwide through real-time community solidarity and advanced AI risk intelligence.
+```
+src/
+  components/       Shared UI components (map, SOS button, AI assistant drawer, panels)
+  components/ui/    shadcn/ui component library
+  pages/            Route-level views (Walk Mode, SOS, Check-In Timer, Guardian Onboarding, etc.)
+  lib/               Firebase service layer, safety scoring engine, and local data store
+  types/             Shared TypeScript types for complaints, guardians, and safety data
+server.ts            Express server and Gemini API proxy endpoints
+```
+
+## Mission
+
+Astra was built to give women greater confidence and control while moving through public spaces, using real-time community data and AI-driven risk intelligence to make everyday navigation safer.
